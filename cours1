@@ -1,0 +1,2726 @@
+!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Livre Pop-Up 3D — Kinésithérapie du Torticolis Musculaire Congénital (TMC)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,500;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-hud: rgba(252, 249, 242, 0.92);
+      --bg-page: #fcf8ef;
+      --bg-card: #f3ece0;
+      --text-main: #22252a;
+      --text-muted: #555c66;
+      --accent: #1d6b64;
+      --accent-soft: #e0f0ed;
+      --warn: #c44536;
+      --border: #d9cfc0;
+      --shadow: 0 10px 30px rgba(20, 24, 30, 0.18);
+    }
+    body.theme-night {
+      --bg-hud: rgba(24, 28, 36, 0.92);
+      --bg-page: #1e232d;
+      --bg-card: #28303d;
+      --text-main: #eef2f7;
+      --text-muted: #a6b0c0;
+      --accent: #4ecdc4;
+      --accent-soft: rgba(78, 205, 196, 0.16);
+      --warn: #ff6b6b;
+      --border: #3a4454;
+      --shadow: 0 12px 34px rgba(0, 0, 0, 0.45);
+    }
+    body.theme-contrast {
+      --bg-hud: #000000;
+      --bg-page: #ffffff;
+      --bg-card: #f0f0f0;
+      --text-main: #000000;
+      --text-muted: #111111;
+      --accent: #0044cc;
+      --accent-soft: #dce8ff;
+      --warn: #b30000;
+      --border: #000000;
+      --shadow: 0 6px 0 #000000;
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #1b222c;
+      color: var(--text-main);
+      user-select: none;
+    }
+
+    #webgl-container {
+      position: fixed; inset: 0; z-index: 1;
+    }
+    /* Robustness: force LTR on CSS3D container so 3D transforms never offset in RTL */
+    #css3d-container {
+      position: fixed; inset: 0; z-index: 2; pointer-events: none; direction: ltr;
+    }
+
+    /* Left Page HTML Sheet rendered inside CSS3DRenderer */
+    .book-left-page {
+      width: 680px;
+      height: 860px;
+      left: 0;
+      top: 0;
+      background: var(--bg-page);
+      color: var(--text-main);
+      border-radius: 16px 4px 4px 16px;
+      border: 2px solid var(--border);
+      padding: 28px 32px;
+      overflow-y: auto;
+      pointer-events: auto;
+      box-shadow: inset -18px 0 28px rgba(0,0,0,0.06);
+      font-size: 14px;
+      line-height: 1.5;
+      scrollbar-width: thin;
+      scrollbar-color: var(--border) transparent;
+    }
+    .page-header {
+      display: flex; justify-content: space-between; align-items: center;
+      border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;
+    }
+    .lesson-badge {
+      background: var(--accent); color: #fff; font-weight: 700;
+      padding: 3px 10px; border-radius: 999px; font-size: 12px; letter-spacing: 0.04em;
+    }
+    body.theme-night .lesson-badge { color: #0f171e; }
+    .course-tag { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+
+    .page-title {
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 27px; font-weight: 700; line-height: 1.18; margin: 0 0 4px 0;
+      color: var(--text-main);
+    }
+    .page-subtitle {
+      font-size: 13px; color: var(--text-muted); margin: 0 0 12px 0; font-weight: 500;
+    }
+    .summary-box {
+      background: var(--bg-card); border-left: 4px solid var(--accent);
+      padding: 10px 14px; border-radius: 6px; margin-bottom: 12px; font-size: 13.5px;
+    }
+    .formula-pill {
+      background: var(--accent-soft); color: var(--accent);
+      border: 1px dashed var(--accent); border-radius: 8px;
+      padding: 8px 12px; font-weight: 700; font-size: 12.5px; margin-bottom: 14px;
+      text-align: center;
+    }
+
+    /* 3D Interactive Flap on the Page */
+    .flap-wrapper {
+      perspective: 1100px; margin-bottom: 14px;
+    }
+    .flap-toggle-btn {
+      width: 100%; text-align: left; background: var(--accent); color: #fff;
+      border: none; border-radius: 8px; padding: 10px 14px; font-weight: 700;
+      font-size: 13px; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    body.theme-night .flap-toggle-btn { color: #0e151b; }
+    .flap-toggle-btn:hover { opacity: 0.93; }
+    .flap-card {
+      transform-origin: top center;
+      transform: rotateX(-90deg);
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      background: var(--bg-card);
+      border: 1.5px solid var(--accent);
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 0 14px;
+      transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1), max-height 0.45s ease, opacity 0.3s ease, padding 0.35s ease;
+    }
+    .flap-card.open {
+      transform: rotateX(0deg);
+      max-height: 320px;
+      opacity: 1;
+      padding: 12px 14px;
+    }
+    .flap-card h4 { margin: 0 0 6px 0; font-size: 13.5px; color: var(--accent); }
+    .flap-card pre {
+      margin: 0; white-space: pre-wrap; font-family: inherit; font-size: 12.5px; line-height: 1.45;
+    }
+
+    /* Section blocks */
+    .section-label {
+      font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em;
+      font-weight: 700; color: var(--text-muted); margin: 12px 0 6px 0;
+    }
+
+    /* Interactive 3D Experiment Controls right on the page */
+    .exp-controls {
+      display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px;
+    }
+    .exp-btn {
+      background: var(--bg-card); color: var(--text-main);
+      border: 1.5px solid var(--accent); border-radius: 8px;
+      padding: 7px 11px; font-size: 12.5px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .exp-btn:hover, .exp-btn.active {
+      background: var(--accent); color: #fff;
+    }
+    body.theme-night .exp-btn:hover, body.theme-night .exp-btn.active { color: #0f171e; }
+
+    /* Vocabulary Grid */
+    .vocab-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px;
+    }
+    .vocab-item {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 10px; font-size: 12px;
+    }
+    .vocab-item strong { display: block; color: var(--accent); margin-bottom: 2px; font-size: 12.5px; }
+
+    /* Tasks */
+    .task-list {
+      margin: 0 0 12px 0; padding-left: 18px; font-size: 12.5px; color: var(--text-main);
+    }
+    .task-list li { margin-bottom: 4px; }
+
+    /* Quiz Box */
+    .quiz-box {
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 12px 14px;
+    }
+    .quiz-q { font-weight: 700; font-size: 13px; margin: 0 0 8px 0; }
+    .quiz-opt {
+      display: block; width: 100%; text-align: left;
+      background: var(--bg-page); color: var(--text-main);
+      border: 1px solid var(--border); border-radius: 7px;
+      padding: 7px 10px; margin-bottom: 6px; font-size: 12.5px; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .quiz-opt:hover { border-color: var(--accent); }
+    .quiz-opt.correct { background: #d4edda; border-color: #28a745; color: #155724; font-weight: 700; }
+    .quiz-opt.wrong { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+    .quiz-feedback { font-size: 12px; margin-top: 6px; font-weight: 600; color: var(--accent); }
+
+    /* Floating Caption Bar & Toast */
+    #caption-bar {
+      position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 20; background: var(--bg-hud); color: var(--text-main);
+      border: 1.5px solid var(--accent); border-radius: 14px;
+      padding: 10px 20px; max-width: min(680px, 92vw);
+      font-size: 14px; font-weight: 600; text-align: center;
+      box-shadow: var(--shadow); backdrop-filter: blur(10px);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+    }
+    #caption-bar.visible { opacity: 1; }
+
+    #toast {
+      position: fixed; bottom: 82px; left: 50%; transform: translateX(-50%) translateY(10px);
+      z-index: 25; background: var(--accent); color: #fff;
+      padding: 7px 16px; border-radius: 999px; font-size: 13px; font-weight: 600;
+      box-shadow: var(--shadow); opacity: 0; pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+    }
+    body.theme-night #toast { color: #0e151b; }
+    #toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Floating Bottom Pill HUD */
+    #bottom-hud {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 30; display: flex; align-items: center; gap: 6px;
+      background: var(--bg-hud); border: 1.5px solid var(--border);
+      border-radius: 999px; padding: 7px 14px;
+      box-shadow: var(--shadow); backdrop-filter: blur(12px);
+      max-width: 96vw; overflow-x: auto;
+    }
+    .hud-btn {
+      background: transparent; color: var(--text-main); border: 1px solid transparent;
+      border-radius: 999px; padding: 6px 11px; font-size: 13px; font-weight: 600;
+      cursor: pointer; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .hud-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+    .hud-btn.active { background: var(--accent); color: #fff; }
+    body.theme-night .hud-btn.active { color: #0e151b; }
+    .hud-sep { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+    #hud-lesson-indicator {
+      font-size: 13px; font-weight: 700; padding: 0 8px; white-space: nowrap; color: var(--text-main);
+    }
+
+    /* Table of Contents Drawer */
+    #toc-drawer {
+      position: fixed; bottom: 76px; left: 50%; transform: translateX(-50%) scale(0.96);
+      z-index: 28; width: min(440px, 92vw);
+      background: var(--bg-hud); border: 1.5px solid var(--border);
+      border-radius: 16px; padding: 14px; box-shadow: var(--shadow);
+      backdrop-filter: blur(14px); opacity: 0; pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+    #toc-drawer.open { opacity: 1; pointer-events: auto; transform: translateX(-50%) scale(1); }
+    #toc-drawer h3 { margin: 0 0 8px 0; font-size: 14px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .toc-item {
+      width: 100%; text-align: left; background: transparent; color: var(--text-main);
+      border: 1px solid transparent; border-radius: 10px; padding: 8px 11px;
+      margin-bottom: 4px; cursor: pointer; font-size: 13px; font-weight: 600;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .toc-item:hover { background: var(--accent-soft); }
+    .toc-item.current { background: var(--accent); color: #fff; }
+    body.theme-night .toc-item.current { color: #0e151b; }
+    .toc-num {
+      width: 22px; height: 22px; border-radius: 50%; background: rgba(0,0,0,0.12);
+      display: inline-flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0;
+    }
+
+    /* Mobile Fallback / Quick Toggle Hint */
+    #help-badge {
+      position: fixed; top: 16px; right: 16px; z-index: 15;
+      background: var(--bg-hud); border: 1px solid var(--border);
+      border-radius: 999px; padding: 5px 12px; font-size: 11.5px; color: var(--text-muted);
+      backdrop-filter: blur(8px);
+    }
+    @media (max-width: 720px) {
+      #help-badge { display: none; }
+      #hud-lesson-indicator { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+    }
+  </style>
+
+  <!-- Pinned Three.js 0.160.0 Import Map -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <!-- Pinned GSAP 3.12.5 -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body>
+  <div id="webgl-container"></div>
+  <div id="css3d-container"></div>
+
+  <div id="caption-bar" role="status" aria-live="polite"></div>
+  <div id="toast" role="status"></div>
+  <div id="help-badge">🖱️ Glisser : orbiter • Molette : zoom • Espace : démo • ←/→ : pages • R : vue</div>
+
+  <div id="toc-drawer" role="dialog" aria-label="Table des matières">
+    <h3>Table des matières — Cours TMC</h3>
+    <div id="toc-list"></div>
+  </div>
+
+  <nav id="bottom-hud" aria-label="Contrôles du livre interactif">
+    <button class="hud-btn" id="btn-toc" title="Table des matières">≡ Sommaire</button>
+    <div class="hud-sep"></div>
+    <button class="hud-btn" id="btn-prev" title="Page précédente (←)">◀</button>
+    <span id="hud-lesson-indicator">1 / 6</span>
+    <button class="hud-btn" id="btn-next" title="Page suivante (→)">▶</button>
+    <div class="hud-sep"></div>
+    <button class="hud-btn" id="btn-demo" title="Lancer / Arrêter la démo guidée (Espace)">▶ Démo</button>
+    <button class="hud-btn" id="btn-reset" title="Réinitialiser la caméra (R)">⟲ Vue</button>
+    <div class="hud-sep"></div>
+    <button class="hud-btn" id="btn-sound" title="Activer/Couper le son">🔊</button>
+    <button class="hud-btn" id="btn-theme" title="Changer le thème (Jour / Nuit / Contraste)">☀️</button>
+    <button class="hud-btn" id="btn-motion" title="Réduire les animations">🎞️</button>
+  </nav>
+
+  <!-- Inlined Lesson Schema (mirrors lessons.json so index.html runs without a server) -->
+  <script id="lessons-data" type="application/json">
+{
+  "meta": {
+    "course": "La kinésithérapie des pathologies infantiles",
+    "title": "Kinésithérapie du Torticolis Musculaire Congénital (TMC)",
+    "author": "Boumekhila Farihane, kinésithérapeute de la santé publique",
+    "language": "fr",
+    "version": "1.0.0"
+  },
+  "lessons": [
+    {
+      "id": "lesson-1",
+      "number": 1,
+      "title": "Introduction & Biomécanique du TMC",
+      "subtitle": "Épidémiologie, définition clinique et atteinte du sterno-cléido-mastoïdien (SCM)",
+      "summary": "Le torticolis musculaire congénital (TMC) est la 3e pathologie orthopédique pédiatrique la plus fréquente (après la luxation congénitale de hanche et le pied bot varus équin). Il se définit par une attitude posturale permanente associant une inclinaison latérale homolatérale et une flexion-rotation controlatérale de la tête, secondaire à la rétraction ou contracture unilatérale du muscle sterno-cléido-mastoïdien (SCM).",
+      "formula": "Attitude TMC = Inclinaison Homolatérale (côté SCM rétracté) + Flexion + Rotation Controlatérale (menton côté opposé)",
+      "vocabulary": [
+        {
+          "term": "Sterno-cléido-mastoïdien (SCM)",
+          "definition": "Muscle cervical antéro-latéral reliant le sternum et la clavicule à l'apophyse mastoïde ; sa rétraction unilatérale cause le TMC."
+        },
+        {
+          "term": "Inclinaison homolatérale",
+          "definition": "Penchement latéral de la tête du même côté que le muscle SCM atteint (l'oreille se rapproche de l'épaule atteinte)."
+        },
+        {
+          "term": "Rotation controlatérale",
+          "definition": "Tour de la tête et du menton vers le côté opposé au muscle SCM rétracté."
+        },
+        {
+          "term": "Olive musculaire",
+          "definition": "Nodule fibreux palpable au sein du corps du SCM rétracté dans les formes sévères."
+        }
+      ],
+      "quiz": {
+        "question": "Dans un torticolis musculaire congénital droit (SCM droit rétracté), quelle est l'attitude spontanée de la tête du nourrisson ?",
+        "options": [
+          "Inclinaison à droite et rotation du menton vers la gauche",
+          "Inclinaison à gauche et rotation du menton vers la droite",
+          "Inclinaison à droite et rotation du menton vers la droite"
+        ],
+        "correctIndex": 0,
+        "explanation": "La rétraction du SCM droit attire l'apophyse mastoïde droite vers le bas et l'avant : la tête s'incline du côté atteint (droite) et tourne vers le côté sain opposé (gauche)."
+      },
+      "flap": {
+        "buttonLabel": "🔍 Révéler le trio orthopédique pédiatrique",
+        "title": "Classement en consultation d'orthopédie pédiatrique",
+        "content": "1. Luxation congénitale de hanche (LCH)\n2. Pied bot varus équin (PBVE)\n3. Torticolis musculaire congénital (TMC)\n\nLe dépistage précoce évite la fibrose du SCM et la plagiocéphalie positionnelle secondaire."
+      },
+      "tasks": [
+        "Cliquer sur le muscle SCM droit (en rouge) pour observer son raccourcissement.",
+        "Cliquer sur le bouton « Tester Rotation / Inclinaison » pour comparer l'attitude TMC et l'axe neutre.",
+        "Lancer la visite guidée (Espace) pour inspecter les insertions sternale, claviculaire et mastoïdienne."
+      ],
+      "sceneDescription": {
+        "models": [
+          "Buste anatomique pédiatrique stylisé avec thorax, clavicules, sternum et tête articulée",
+          "Muscle SCM droit (contracturé/rouge orangé) et SCM gauche sain (rose souple)",
+          "Podium comparatif des 3 pathologies orthopédiques pédiatriques (LCH, PBVE, TMC)",
+          "Flèches vectorielles 3D d'inclinaison homolatérale et de rotation controlatérale"
+        ],
+        "interactions": [
+          {
+            "id": "toggle_tmc_posture",
+            "label": "Alterner Posture TMC / Neutre",
+            "type": "toggle"
+          },
+          {
+            "id": "palpate_scm",
+            "label": "Palper le SCM droit (contracture)",
+            "type": "pulse"
+          }
+        ]
+      },
+      "pageLabels": [
+        {
+          "text": "SCM Droit (Rétracté)",
+          "position": [
+            -0.35,
+            0.75,
+            0.25
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "SCM Gauche (Sain)",
+          "position": [
+            0.35,
+            0.75,
+            0.25
+          ],
+          "anchor": "left"
+        },
+        {
+          "text": "Inclinaison Homolatérale",
+          "position": [
+            -0.65,
+            1.25,
+            0.0
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "Rotation Controlatérale",
+          "position": [
+            0.65,
+            1.15,
+            0.3
+          ],
+          "anchor": "left"
+        }
+      ],
+      "demoSteps": [
+        {
+          "caption": "Étape 1 : Voici l'axe cervical neutre d'un nourrisson avant l'installation de la rétraction musculaire.",
+          "cameraTarget": [
+            1.35,
+            0.7,
+            0.0
+          ],
+          "cameraOffset": [
+            0.0,
+            1.4,
+            2.2
+          ],
+          "action": "set_neutral"
+        },
+        {
+          "caption": "Étape 2 : Le SCM droit se rétracte et s'épaissit, tirant l'apophyse mastoïde droite vers le sternum.",
+          "cameraTarget": [
+            1.2,
+            0.75,
+            0.15
+          ],
+          "cameraOffset": [
+            -0.9,
+            1.1,
+            1.7
+          ],
+          "action": "palpate_scm"
+        },
+        {
+          "caption": "Étape 3 : Résultat clinique — inclinaison latérale droite (homolatérale) et flexion-rotation gauche (controlatérale).",
+          "cameraTarget": [
+            1.35,
+            0.85,
+            0.0
+          ],
+          "cameraOffset": [
+            0.5,
+            1.35,
+            2.0
+          ],
+          "action": "set_tmc"
+        }
+      ]
+    },
+    {
+      "id": "lesson-2",
+      "number": 2,
+      "title": "Les 5 Objectifs de la Rééducation",
+      "subtitle": "Prévenir la fibrose, la plagiocéphalie et les troubles du schéma moteur",
+      "summary": "La prise en charge kinésithérapique poursuit cinq objectifs fondamentaux : (1) récupérer la mobilité cervicale en rotation et inclinaison, (2) prévenir la fibrose musculaire et l'apparition de l'olive du SCM, (3) corriger les attitudes vicieuses pour réaligner tête et tronc, (4) prévenir les déformations secondaires (plagiocéphalie, asymétries faciales, troubles de croissance), et (5) éviter un schéma moteur pathologique.",
+      "formula": "Rééducation Précoce = Mobilité Cervicale + Prévention Fibrose/Olive + Symétrie Crânio-Faciale & Motrice",
+      "vocabulary": [
+        {
+          "term": "Plagiocéphalie",
+          "definition": "Aplatissement asymétrique de la voûte crânienne du nourrisson lié à l'appui prolongé toujours du même côté."
+        },
+        {
+          "term": "Fibrose musculaire",
+          "definition": "Transformation progressive des fibres musculaires du SCM en tissu fibreux inextensible en l'absence d'étirement."
+        },
+        {
+          "term": "Attitude vicieuse",
+          "definition": "Positionnement anormal permanent de la tête par rapport à l'axe vertical du tronc."
+        },
+        {
+          "term": "Schéma moteur symétrique",
+          "definition": "Développement harmonieux des coordinations bilatérales (ligne médiane, préhension, retournements)."
+        }
+      ],
+      "quiz": {
+        "question": "Parmi ces propositions, quelle déformation secondaire la rééducation du TMC vise-t-elle directement à prévenir ?",
+        "options": [
+          "La plagiocéphalie et les asymétries faciales",
+          "La luxation congénitale de hanche",
+          "Le pied bot varus équin"
+        ],
+        "correctIndex": 0,
+        "explanation": "L'appui crânien unilatéral prolongé et la traction asymétrique du SCM entraînent une plagiocéphalie et une asymétrie faciale si la mobilité n'est pas restaurée."
+      },
+      "flap": {
+        "buttonLabel": "📋 Ouvrir la check-list des 5 objectifs cliniques",
+        "title": "Synthèse des 5 objectifs thérapeutiques",
+        "content": "1. Récupérer la mobilité cervicale (rotation + inclinaison)\n2. Prévenir la fibrose musculaire et l'olive du SCM\n3. Corriger les attitudes vicieuses (alignement tête-tronc)\n4. Prévenir plagiocéphalie, asymétries faciales et troubles de croissance\n5. Favoriser un développement psychomoteur symétrique"
+      },
+      "tasks": [
+        "Cliquer sur les 5 piliers d'objectifs pour illuminer leur impact sur le modèle crânio-cervical.",
+        "Basculer le mode « Prévention Plagiocéphalie » pour visualiser la symétrisation de la voûte crânienne.",
+        "Répondre au quiz de validation à gauche."
+      ],
+      "sceneDescription": {
+        "models": [
+          "Cinq colonnes interactives numérotées de 1 à 5 représentant les objectifs de rééducation",
+          "Modèle de voûte crânienne avec grille topographique illustrant la symétrie vs plagiocéphalie",
+          "Fil à plomb laser 3D matérialisant l'alignement tête-tronc"
+        ],
+        "interactions": [
+          {
+            "id": "cycle_objectives",
+            "label": "Activer Objectif Suivant (1→5)",
+            "type": "step"
+          },
+          {
+            "id": "toggle_cranial_symmetry",
+            "label": "Comparer Plagiocéphalie / Crâne Symétrique",
+            "type": "toggle"
+          }
+        ]
+      },
+      "pageLabels": [
+        {
+          "text": "1. Mobilité Cervicale",
+          "position": [
+            -0.7,
+            0.65,
+            0.45
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "2. Prévention Olive",
+          "position": [
+            -0.35,
+            0.75,
+            0.45
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "3. Alignement Tête-Tronc",
+          "position": [
+            0.0,
+            0.95,
+            0.0
+          ],
+          "anchor": "center"
+        },
+        {
+          "text": "4. Anti-Plagiocéphalie",
+          "position": [
+            0.35,
+            0.75,
+            0.45
+          ],
+          "anchor": "left"
+        },
+        {
+          "text": "5. Schéma Symétrique",
+          "position": [
+            0.7,
+            0.65,
+            0.45
+          ],
+          "anchor": "left"
+        }
+      ],
+      "demoSteps": [
+        {
+          "caption": "Étape 1 : Les 5 piliers de la kinésithérapie encadrent l'axe tête-tronc du nourrisson.",
+          "cameraTarget": [
+            1.35,
+            0.65,
+            0.0
+          ],
+          "cameraOffset": [
+            0.0,
+            1.6,
+            2.3
+          ],
+          "action": "highlight_all"
+        },
+        {
+          "caption": "Étape 2 : Sans prise en charge, l'appui constant du même côté déforme la voûte crânienne (plagiocéphalie).",
+          "cameraTarget": [
+            1.35,
+            0.9,
+            0.0
+          ],
+          "cameraOffset": [
+            0.8,
+            1.5,
+            1.5
+          ],
+          "action": "show_plagio"
+        },
+        {
+          "caption": "Étape 3 : La restauration des amplitudes réaligne la tête sur le fil à plomb médian et préserve la symétrie.",
+          "cameraTarget": [
+            1.35,
+            0.85,
+            0.0
+          ],
+          "cameraOffset": [
+            -0.6,
+            1.3,
+            1.8
+          ],
+          "action": "show_symmetric"
+        }
+      ]
+    },
+    {
+      "id": "lesson-3",
+      "number": 3,
+      "title": "Torticolis Positionnel & Nursing Postural",
+      "subtitle": "Contraintes intra-utérines, stimulations sensorielles, biberon et précautions",
+      "summary": "Dû aux contraintes intra-utérines, le torticolis congénital positionnel régresse spontanément dans la majorité des cas sans rétraction vraie du SCM. Le traitement privilégie les mobilisations actives par stimulation sensorielle (auditive/cutanée), le port d'un petit collier cervical en feutre, le nursing postural (sacs de sable), la présentation du biberon du côté rétracté pour induire une rotation opposée, et les jouets du côté correcteur.",
+      "formula": "Biberon côté atteint + Jouets côté correcteur ➔ Rotation active vers le côté opposé",
+      "vocabulary": [
+        {
+          "term": "Torticolis positionnel",
+          "definition": "Attitude posturale bénigne liée aux contraintes mécaniques intra-utérines, sans nodule fibreux ni rétraction fixée du SCM."
+        },
+        {
+          "term": "Collier cervical en feutre",
+          "definition": "Orthèse souple légère limitant l'inclinaison latérale du côté atteint tout en respectant la fragilité du nourrisson."
+        },
+        {
+          "term": "Nursing postural",
+          "definition": "Installation quotidienne à domicile (sacs de sable, positionnement du lit, présentation du biberon) guidée par les parents."
+        },
+        {
+          "term": "Précautions auditives",
+          "definition": "Sons doux (niveau conversation), sans bruit brusque ni strident, à distance de l'oreille, en variant les stimuli."
+        }
+      ],
+      "quiz": {
+        "question": "De quel côté doit-on présenter le biberon chez un nourrisson ayant un torticolis droit pour stimuler la rotation correctrice ?",
+        "options": [
+          "Du côté droit (côté rétracté), afin qu'il tourne la tête vers la droite",
+          "Du côté gauche (côté sain), afin qu'il incline la tête",
+          "Strictement au-dessus de son front en hyperextension"
+        ],
+        "correctIndex": 0,
+        "explanation": "Dans un torticolis droit, le menton est tourné spontanément à gauche. Présenter le biberon à droite l'encourage à tourner activement la tête vers la droite (côté atteint)."
+      },
+      "flap": {
+        "buttonLabel": "🔔 Consulter les 5 précautions de stimulation sensorielle",
+        "title": "Règles de sécurité sensorielle chez le nourrisson",
+        "content": "• Utiliser des sons à faible intensité (volume de conversation).\n• Éviter les bruits brusques, stridents ou trop forts.\n• Ne pas placer la source sonore trop près de l'oreille.\n• Adapter la stimulation à l'âge, à l'éveil et aux réactions du bébé.\n• Alterner les stimulations (auditives, visuelles, cutanées) pour éviter l'habituation."
+      },
+      "tasks": [
+        "Cliquer sur le biberon (côté atteint) pour déclencher la rotation active de la tête du bébé.",
+        "Activer le hochet sonore doux pour observer l'onde acoustique calibrée à distance de l'oreille.",
+        "Placer le collier en feutre et les sacs de sable de maintien postural."
+      ],
+      "sceneDescription": {
+        "models": [
+          "Nourrisson en décubitus dorsal sur tapis d'éveil avec sacs de sable latéraux",
+          "Biberon interactif positionné du côté atteint (droit)",
+          "Hochet sensoriel émettant des ondes sonores douces à distance sécurisée",
+          "Collier cervical en feutre amovible"
+        ],
+        "interactions": [
+          {
+            "id": "feed_bottle",
+            "label": "Présenter le Biberon (Côté atteint)",
+            "type": "action"
+          },
+          {
+            "id": "sound_stimulus",
+            "label": "Stimulation Sonore Douce",
+            "type": "action"
+          },
+          {
+            "id": "toggle_collar",
+            "label": "Mettre / Retirer Collier en Feutre",
+            "type": "toggle"
+          }
+        ]
+      },
+      "pageLabels": [
+        {
+          "text": "Biberon (Côté atteint)",
+          "position": [
+            -0.65,
+            0.55,
+            0.35
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "Sacs de sable",
+          "position": [
+            -0.45,
+            0.25,
+            -0.2
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "Hochet (Son doux)",
+          "position": [
+            -0.7,
+            0.85,
+            -0.25
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "Collier en feutre",
+          "position": [
+            0.35,
+            0.65,
+            0.25
+          ],
+          "anchor": "left"
+        }
+      ],
+      "demoSteps": [
+        {
+          "caption": "Étape 1 : Le nourrisson est installé en décubitus dorsal avec des sacs de sable stabilisant le tronc.",
+          "cameraTarget": [
+            1.35,
+            0.45,
+            0.0
+          ],
+          "cameraOffset": [
+            0.0,
+            1.65,
+            1.9
+          ],
+          "action": "setup_nursing"
+        },
+        {
+          "caption": "Étape 2 : Présentation du biberon du côté atteint — le bébé tourne activement la tête vers la stimulation.",
+          "cameraTarget": [
+            1.15,
+            0.55,
+            0.2
+          ],
+          "cameraOffset": [
+            -0.8,
+            1.3,
+            1.6
+          ],
+          "action": "feed_bottle"
+        },
+        {
+          "caption": "Étape 3 : Stimulation auditive douce à distance de l'oreille et pose du collier cervical en feutre.",
+          "cameraTarget": [
+            1.35,
+            0.55,
+            0.0
+          ],
+          "cameraOffset": [
+            0.6,
+            1.4,
+            1.7
+          ],
+          "action": "sound_and_collar"
+        }
+      ]
+    },
+    {
+      "id": "lesson-4",
+      "number": 4,
+      "title": "TMC : Stades I & II — Mobilisations Passives",
+      "subtitle": "Chronologie de 0 à 2 mois (Stade I) et > 3 mois (Stade II), prise manuelle et étude CONSORT",
+      "summary": "Dans le TMC vrai (contracture palpable du SCM), le traitement suit l'âge : Stade I (naissance à 2 mois) = conseils positionnels + mobilisations passives très douces ; Stade II (> 3 mois) = mise en confiance assis dans les bras avec la mère, puis mobilisations passives en décubitus dorsal tête hors table (exemple torticolis droit : main gauche soutenant la tête en légère extension, main droite empaumant le menton). L'essai randomisé de Song et al. confirme la supériorité de l'étirement passif avant 3 mois.",
+      "formula": "Torticolis Droit : Main Gauche (occiput, légère extension) + Main Droite (menton, avant-bras sur thorax) ➔ Rotation + Inclinaison indolores",
+      "vocabulary": [
+        {
+          "term": "Stade I (0–2 mois)",
+          "definition": "Phase néonatale associant nursing postural, stimulations actives et mobilisations passives très douces."
+        },
+        {
+          "term": "Stade II (> 3 mois)",
+          "definition": "Phase d'étirement et d'assouplissement du SCM rétracté combinée au renforcement du SCM sain controlatéral."
+        },
+        {
+          "term": "Prise bimanuelle (TMC droit)",
+          "definition": "Main gauche sous la tête en légère extension, main droite empaumant le menton avec avant-bras stabilisant le thorax."
+        },
+        {
+          "term": "Règle de non-douleur",
+          "definition": "En cas de résistance de l'enfant, ne jamais forcer : rassurer l'enfant avant de reprendre plus lentement."
+        }
+      ],
+      "quiz": {
+        "question": "Lors de la mobilisation passive d'un torticolis droit en décubitus dorsal (tête dépassant du bord de table), comment se placent les mains du kinésithérapeute ?",
+        "options": [
+          "Main gauche soutenant la tête en légère extension, main droite empaumant le menton (avant-bras sur le thorax)",
+          "Les deux mains comprimant directement l'olive du SCM droit",
+          "Main droite sous l'occiput en flexion forcée et main gauche sur le front"
+        ],
+        "correctIndex": 0,
+        "explanation": "La main gauche contrôle la tête en légère extension hors de la table, tandis que la main droite empaume le menton et stabilise le thorax avec l'avant-bras."
+      },
+      "flap": {
+        "buttonLabel": "📊 Voir l'étude clinique CONSORT (Song et al.)",
+        "title": "Preuve scientifique — Essai clinique randomisé",
+        "content": "Étude : « Effect of physical therapy intervention on thickness and ratio of the sternocleidomastoid muscle and head rotation angle in infants with congenital muscular torticollis » (Song, Hwang & Lee).\n\nConclusion clé : L'étirement passif (passive stretching) s'est révélé significativement plus efficace que les autres approches pour améliorer l'angle de rotation cervicale chez les nourrissons atteints de TMC de moins de 3 mois."
+      },
+      "tasks": [
+        "Lancer la séquence de mobilisation passive douce (Rotation → Inclinaison → Combinée).",
+        "Tester la simulation « Résistance de l'enfant » pour voir l'arrêt immédiat et la phase d'apaisement.",
+        "Inspecter le positionnement de la tête légèrement au bord de la table de rééducation."
+      ],
+      "sceneDescription": {
+        "models": [
+          "Table de kinésithérapie pédiatrique avec nourrisson en décubitus dorsal, tête dépassant du bord",
+          "Mains articulées du kinésithérapeute (main gauche sous l'occiput, main droite au menton + appui thoracique)",
+          "Arcs angulaires 3D gradués affichant la rotation et l'inclinaison cervicale",
+          "Jauge de confort / tension musculaire (vert = indolore, ambre = résistance -> pause)"
+        ],
+        "interactions": [
+          {
+            "id": "passive_stretch_seq",
+            "label": "Exécuter Étirement Passif Doux",
+            "type": "action"
+          },
+          {
+            "id": "simulate_resistance",
+            "label": "Simuler Résistance (Ne jamais forcer)",
+            "type": "action"
+          }
+        ]
+      },
+      "pageLabels": [
+        {
+          "text": "Tête hors bord de table",
+          "position": [
+            -0.55,
+            0.75,
+            0.35
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "Main G : soutien occiput",
+          "position": [
+            -0.65,
+            0.5,
+            0.25
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "Main D : menton + thorax",
+          "position": [
+            0.55,
+            0.65,
+            0.3
+          ],
+          "anchor": "left"
+        },
+        {
+          "text": "Étirement SCM indolore",
+          "position": [
+            0.5,
+            0.9,
+            -0.15
+          ],
+          "anchor": "left"
+        }
+      ],
+      "demoSteps": [
+        {
+          "caption": "Étape 1 : Installation en décubitus dorsal, la tête dépassant légèrement du bord de la table.",
+          "cameraTarget": [
+            1.35,
+            0.65,
+            0.1
+          ],
+          "cameraOffset": [
+            -0.7,
+            1.35,
+            1.8
+          ],
+          "action": "position_table"
+        },
+        {
+          "caption": "Étape 2 : Prise bimanuelle — main gauche sous la tête en légère extension, main droite au menton stabilisant le thorax.",
+          "cameraTarget": [
+            1.25,
+            0.68,
+            0.25
+          ],
+          "cameraOffset": [
+            0.5,
+            1.25,
+            1.5
+          ],
+          "action": "passive_stretch"
+        },
+        {
+          "caption": "Étape 3 : En cas de résistance, arrêt immédiat sans jamais forcer, apaisement puis reprise lente.",
+          "cameraTarget": [
+            1.35,
+            0.72,
+            0.15
+          ],
+          "cameraOffset": [
+            0.0,
+            1.5,
+            1.9
+          ],
+          "action": "resistance_pause"
+        }
+      ]
+    },
+    {
+      "id": "lesson-5",
+      "number": 5,
+      "title": "Renforcement Musculaire selon les 3 Plans",
+      "subtitle": "Exercices en suspension : décubitus dorsal, latérocubitus controlatéral et procubitus",
+      "summary": "Au Stade II (> 3 mois), le renforcement des muscles du cou et du tronc s'effectue progressivement par des exercices en suspension (maintien par les mains) selon trois plans : (1) en décubitus dorsal pour les fléchisseurs antérieurs du cou, (2) en latérocubitus sur le côté opposé au torticolis pour les inclinateurs latéraux du côté sain, et (3) en procubitus pour les extenseurs postérieurs du cou.",
+      "formula": "3 Plans de Renforcement : Dorsal (Fléchisseurs) + Latérocubitus Controlatéral (Inclinateurs sains) + Procubitus (Extenseurs)",
+      "vocabulary": [
+        {
+          "term": "Décubitus dorsal",
+          "definition": "Bébé sur le dos : la stimulation du redressement vers l'avant sollicite les fléchisseurs antérieurs du cou."
+        },
+        {
+          "term": "Latérocubitus controlatéral",
+          "definition": "Bébé placé sur le côté opposé au torticolis : le redressement de la tête dans l'alignement du tronc renforce les muscles sains."
+        },
+        {
+          "term": "Procubitus",
+          "definition": "Bébé sur le ventre : le soulèvement et maintien de la tête sollicitent les extenseurs postérieurs du cou."
+        },
+        {
+          "term": "Exercices en suspension",
+          "definition": "Maintien manuel sécurisé par le kinésithérapeute déclenchant une réaction antigravitaire active de la tête."
+        }
+      ],
+      "quiz": {
+        "question": "Pour renforcer les muscles inclinateurs latéraux sains d'un bébé atteint d'un torticolis droit, dans quelle position le place-t-on ?",
+        "options": [
+          "En latérocubitus gauche (côté opposé au torticolis)",
+          "En latérocubitus droit (côté du torticolis)",
+          "Strictement en décubitus dorsal à plat"
+        ],
+        "correctIndex": 0,
+        "explanation": "Placé sur le côté gauche (opposé au torticolis droit), la gravité attire la tête vers le bas ; pour la redresser dans l'alignement du tronc, le bébé contracte activement ses inclinateurs latéraux gauches (côté sain)."
+      },
+      "flap": {
+        "buttonLabel": "💪 Tableau récapitulatif des 3 plans musculaires",
+        "title": "Correspondance Position ➔ Groupe Musculaire",
+        "content": "1. Décubitus dorsal (sur le dos) ➔ Redressement antérieur ➔ Fléchisseurs antérieurs du cou.\n2. Latérocubitus (côté opposé au TMC) ➔ Alignement tête-tronc ➔ Inclinateurs latéraux sains.\n3. Procubitus (sur le ventre) ➔ Soulèvement de la tête ➔ Extenseurs postérieurs du cou."
+      },
+      "tasks": [
+        "Cliquer sur chacun des 3 plans (Dorsal, Latérocubitus, Procubitus) pour observer le redressement actif du nourrisson.",
+        "Vérifier quel groupe musculaire (antérieur, latéral sain ou postérieur) s'illumine dans chaque plan.",
+        "Lancer la démo guidée pour enchaîner les 3 positions en suspension."
+      ],
+      "sceneDescription": {
+        "models": [
+          "Nourrisson articulé soutenu en suspension manuelle par le kinésithérapeute",
+          "Groupes musculaires cervicaux colorés dynamiquement (fléchisseurs antérieurs, inclinateurs latéraux gauches, extenseurs postérieurs)",
+          "Sélecteur 3D des 3 plans anatomiques (Sagittal antérieur, Frontal latéral, Sagittal postérieur)"
+        ],
+        "interactions": [
+          {
+            "id": "plane_dorsal",
+            "label": "1. Décubitus Dorsal (Fléchisseurs)",
+            "type": "mode"
+          },
+          {
+            "id": "plane_lateral",
+            "label": "2. Latérocubitus Opposé (Inclinateurs)",
+            "type": "mode"
+          },
+          {
+            "id": "plane_prone",
+            "label": "3. Procubitus (Extenseurs)",
+            "type": "mode"
+          }
+        ]
+      },
+      "pageLabels": [
+        {
+          "text": "Plan 1 : Dorsal (Fléchisseurs)",
+          "position": [
+            -0.65,
+            0.85,
+            0.3
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "Plan 2 : Latérocubitus Opposé",
+          "position": [
+            0.0,
+            1.05,
+            0.0
+          ],
+          "anchor": "center"
+        },
+        {
+          "text": "Plan 3 : Procubitus (Extenseurs)",
+          "position": [
+            0.65,
+            0.85,
+            0.3
+          ],
+          "anchor": "left"
+        }
+      ],
+      "demoSteps": [
+        {
+          "caption": "Étape 1 : Décubitus dorsal en suspension — le bébé redresse la tête vers l'avant (fléchisseurs antérieurs).",
+          "cameraTarget": [
+            1.35,
+            0.65,
+            0.0
+          ],
+          "cameraOffset": [
+            -0.8,
+            1.3,
+            1.7
+          ],
+          "action": "plane_dorsal"
+        },
+        {
+          "caption": "Étape 2 : Latérocubitus sur le côté opposé au torticolis — redressement latéral actif renforçant le côté sain.",
+          "cameraTarget": [
+            1.35,
+            0.7,
+            0.0
+          ],
+          "cameraOffset": [
+            0.0,
+            1.35,
+            1.85
+          ],
+          "action": "plane_lateral"
+        },
+        {
+          "caption": "Étape 3 : Procubitus (sur le ventre) — soulèvement actif de la tête sollicitant les extenseurs postérieurs.",
+          "cameraTarget": [
+            1.35,
+            0.65,
+            0.0
+          ],
+          "cameraOffset": [
+            0.85,
+            1.3,
+            1.7
+          ],
+          "action": "plane_prone"
+        }
+      ]
+    },
+    {
+      "id": "lesson-6",
+      "number": 6,
+      "title": "Stade III (> 2 ans) & Rééducation Post-Opératoire",
+      "subtitle": "Ballon de Klein, étirement devant miroir, collier de prévention, minerve et corset de Milwaukee",
+      "summary": "Au Stade III (> 2 ans), la rééducation développe l'équilibre et l'éveil psychomoteur : sollicitation réflexe en procubitus sur ballon de Klein (déséquilibres doux provoquant des réactions de redressement), étirement assis devant miroir, et port d'un collier en feutre hors séances. En cas de chirurgie correctrice, la rééducation post-opératoire s'adapte à l'orthèse : minerve amovible (mobilisation sans orthèse, autograndissement miroir, sports en extension) ou corset de Milwaukee (allongement axial actif + rotations avec épaules stabilisées, renforcement des spinaux).",
+      "formula": "Stade III (> 2 ans) : Ballon de Klein + Miroir + Éducation Parentale | Post-Op : Minerve Amovible ou Corset de Milwaukee",
+      "vocabulary": [
+        {
+          "term": "Ballon de Klein",
+          "definition": "Gros ballon de rééducation sur lequel l'enfant est placé en procubitus pour déclencher des réactions réflexes de redressement."
+        },
+        {
+          "term": "Minerve amovible",
+          "definition": "Orthèse cervicale post-opératoire retirée en séance pour mobilisations actives/actif-aidées, autograndissement miroir et sports en extension."
+        },
+        {
+          "term": "Corset de Milwaukee",
+          "definition": "Orthèse cervico-thoraco-lombo-sacrée imposant un allongement axial actif, des rotations tête-épaules dissociées et un renforcement spinal."
+        },
+        {
+          "term": "Autograndissement axial",
+          "definition": "Élongation active de la colonne cervicale et du tronc face au miroir pour corriger la statique."
+        }
+      ],
+      "quiz": {
+        "question": "Dans le protocole post-opératoire avec corset de Milwaukee, quelle précaution le kinésithérapeute prend-il lors des rotations actives de la tête ?",
+        "options": [
+          "Stabiliser fermement les épaules pour éviter toute compensation du tronc",
+          "Laisser le tronc tourner librement avec la tête",
+          "Interdire tout renforcement des muscles spinaux"
+        ],
+        "correctIndex": 0,
+        "explanation": "Le kinésithérapeute stabilise fermement les épaules afin d'isoler la rotation cervicale pure lors de l'allongement axial actif et d'éviter les compensations du tronc."
+      },
+      "flap": {
+        "buttonLabel": "🏥 Comparer les 2 protocoles post-opératoires",
+        "title": "Minerve amovible vs Corset de Milwaukee",
+        "content": "Protocole avec Minerve Amovible :\n• Mobilisation cervicale active et actif-aidée (sans orthèse) en inclinaison et rotation.\n• Correction posturale face au miroir : autograndissement tête/épaules.\n• Activité physique : sports à visée d'extension (visée haute).\n\nProtocole avec Corset de Milwaukee :\n• Allongement axial actif + rotations droite/gauche (épaules fermement stabilisées).\n• Renforcement des muscles spinaux (si attitude scoliotique associée) et équilibre."
+      },
+      "tasks": [
+        "Tester les déséquilibres sur le ballon de Klein pour observer la réaction réflexe de redressement.",
+        "Basculer vers le poste Miroir + Minerve Amovible (autograndissement et rotation contrôlée).",
+        "Basculer vers le protocole Corset de Milwaukee (allongement axial actif avec stabilisation des épaules)."
+      ],
+      "sceneDescription": {
+        "models": [
+          "Gros ballon de Klein bleu/gris avec enfant en procubitus et réactions de redressement",
+          "Miroir de rééducation postural avec repères verticaux d'autograndissement",
+          "Modèles d'orthèses post-opératoires : minerve amovible et corset de Milwaukee"
+        ],
+        "interactions": [
+          {
+            "id": "klein_ball_tilt",
+            "label": "1. Ballon de Klein (Réflexe redressement)",
+            "type": "mode"
+          },
+          {
+            "id": "mirror_minerve",
+            "label": "2. Miroir & Minerve Amovible",
+            "type": "mode"
+          },
+          {
+            "id": "milwaukee_protocol",
+            "label": "3. Corset de Milwaukee (Allongement axial)",
+            "type": "mode"
+          }
+        ]
+      },
+      "pageLabels": [
+        {
+          "text": "Ballon de Klein (Stade III)",
+          "position": [
+            -0.65,
+            0.75,
+            0.35
+          ],
+          "anchor": "right"
+        },
+        {
+          "text": "Miroir : Autograndissement",
+          "position": [
+            0.0,
+            1.15,
+            -0.25
+          ],
+          "anchor": "center"
+        },
+        {
+          "text": "Minerve / Corset Milwaukee",
+          "position": [
+            0.65,
+            0.75,
+            0.35
+          ],
+          "anchor": "left"
+        }
+      ],
+      "demoSteps": [
+        {
+          "caption": "Étape 1 : Stade III (> 2 ans) — l'enfant est en procubitus sur le ballon de Klein ; de légers déséquilibres stimulent le redressement.",
+          "cameraTarget": [
+            1.35,
+            0.65,
+            0.1
+          ],
+          "cameraOffset": [
+            -0.85,
+            1.35,
+            1.85
+          ],
+          "action": "klein_ball_tilt"
+        },
+        {
+          "caption": "Étape 2 : Face au miroir (protocole minerve amovible) — étirement doux et autograndissement axial de la tête.",
+          "cameraTarget": [
+            1.35,
+            0.85,
+            0.0
+          ],
+          "cameraOffset": [
+            0.0,
+            1.35,
+            1.9
+          ],
+          "action": "mirror_minerve"
+        },
+        {
+          "caption": "Étape 3 : Protocole corset de Milwaukee — allongement axial actif et rotations avec épaules fermement stabilisées.",
+          "cameraTarget": [
+            1.35,
+            0.85,
+            0.0
+          ],
+          "cameraOffset": [
+            0.85,
+            1.35,
+            1.85
+          ],
+          "action": "milwaukee_protocol"
+        }
+      ]
+    }
+  ]
+}
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS3DRenderer, CSS3DObject } from 'three/addons/renderers/CSS3DRenderer.js';
+    import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+    import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+    import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+
+    // =========================================================================
+    // 1. LOAD SCHEMA & STATE
+    // =========================================================================
+    const SCHEMA = JSON.parse(document.getElementById('lessons-data').textContent);
+    const LESSONS = SCHEMA.lessons;
+
+    const state = {
+      currentIndex: 0,
+      isFlipping: false,
+      isDemoPlaying: false,
+      demoTimers: [],
+      soundEnabled: true,
+      themeIndex: 0, // 0: day, 1: night, 2: contrast
+      reducedMotion: window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+      activeAction: null,
+      interactiveMeshes: [],
+      disposables: { geometries: [], materials: [], textures: [] }
+    };
+
+    // =========================================================================
+    // 2. PROCEDURAL WEB AUDIO SYNTH (No external audio files)
+    // =========================================================================
+    class SoundSynth {
+      constructor() {
+        this.ctx = null;
+      }
+      ensureCtx() {
+        if (!state.soundEnabled) return null;
+        if (!this.ctx) {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) this.ctx = new AudioCtx();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') this.ctx.resume();
+        return this.ctx;
+      }
+      playClick(freq = 520) {
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.06);
+        gain.gain.setValueAtTime(0.14, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.065);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.07);
+      }
+      playPop(up = true) {
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        const startF = up ? 220 : 480;
+        const endF = up ? 580 : 190;
+        osc.frequency.setValueAtTime(startF, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(endF, ctx.currentTime + 0.14);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(); osc.stop(ctx.currentTime + 0.16);
+      }
+      playRustle() {
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+        const bufferSize = ctx.sampleRate * 0.35;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+        }
+        const noise = ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(950, ctx.currentTime);
+        filter.Q.value = 1.4;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.16, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.34);
+        noise.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+        noise.start();
+      }
+      playChime(success = true) {
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+        const notes = success ? [523.25, 659.25, 783.99] : [311.13, 277.18];
+        notes.forEach((f, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = 'sine';
+          const t0 = ctx.currentTime + idx * 0.08;
+          osc.frequency.setValueAtTime(f, t0);
+          gain.gain.setValueAtTime(0.12, t0);
+          gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.22);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(t0); osc.stop(t0 + 0.24);
+        });
+      }
+    }
+    const synth = new SoundSynth();
+
+    // =========================================================================
+    // 3. PROCEDURAL CANVAS TEXTURES (Paper, Wood, Cloth, Blinds Light)
+    // =========================================================================
+    function createWoodTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#5c3d28';
+      ctx.fillRect(0, 0, 512, 512);
+      for (let y = 0; y < 512; y += 2) {
+        const tone = 68 + Math.sin(y * 0.07) * 14 + (Math.random() - 0.5) * 10;
+        ctx.fillStyle = `rgb(${tone + 26}, ${tone}, ${Math.max(20, tone - 22)})`;
+        ctx.fillRect(0, y, 512, 2);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(3, 3);
+      return tex;
+    }
+
+    function createClothTexture() {
+      const c = document.createElement('canvas');
+      c.width = 256; c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#1b544e';
+      ctx.fillRect(0, 0, 256, 256);
+      ctx.fillStyle = 'rgba(255,255,255,0.06)';
+      for (let i = 0; i < 256; i += 4) {
+        ctx.fillRect(i, 0, 1, 256);
+        ctx.fillRect(0, i, 256, 1);
+      }
+      const tex = new THREE.CanvasTexture(c);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(6, 6);
+      return tex;
+    }
+
+    function createPaperTexture() {
+      const c = document.createElement('canvas');
+      c.width = 512; c.height = 512;
+      const ctx = c.getContext('2d');
+      ctx.fillStyle = '#fbf6ea';
+      ctx.fillRect(0, 0, 512, 512);
+      for (let i = 0; i < 4000; i++) {
+        const x = Math.random() * 512;
+        const y = Math.random() * 512;
+        ctx.fillStyle = Math.random() > 0.5 ? 'rgba(180,165,140,0.08)' : 'rgba(255,255,255,0.12)';
+        ctx.fillRect(x, y, 2, 2);
+      }
+      // Subtle grid lines for anatomical stage
+      ctx.strokeStyle = 'rgba(29, 107, 100, 0.08)';
+      ctx.lineWidth = 1;
+      for (let g = 32; g < 512; g += 32) {
+        ctx.beginPath(); ctx.moveTo(g, 0); ctx.lineTo(g, 512); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(0, g); ctx.lineTo(512, g); ctx.stroke();
+      }
+      const tex = new THREE.CanvasTexture(c);
+      return tex;
+    }
+
+    // =========================================================================
+    // 4. THREE.JS SCENE, RENDERERS, POST-PROCESSING & CAMERA CONTROLS
+    // =========================================================================
+    const webglContainer = document.getElementById('webgl-container');
+    const css3dContainer = document.getElementById('css3d-container');
+
+    function getSafeAspect() {
+      const w = window.innerWidth || 1280;
+      const h = window.innerHeight || 800;
+      const aspect = w / h;
+      return (!isFinite(aspect) || aspect <= 0) ? (16 / 10) : aspect;
+    }
+
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#232b35');
+    scene.fog = new THREE.FogExp2('#232b35', 0.032);
+
+    const camera = new THREE.PerspectiveCamera(38, getSafeAspect(), 0.1, 60);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(window.innerWidth || 1280, window.innerHeight || 800);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    webglContainer.appendChild(renderer.domElement);
+
+    const cssRenderer = new CSS3DRenderer();
+    cssRenderer.setSize(window.innerWidth || 1280, window.innerHeight || 800);
+    css3dContainer.appendChild(cssRenderer.domElement);
+
+    // Subtle Paper Grain + Vignette Post-Processing Shader
+    const composer = new EffectComposer(renderer);
+    const renderPass = new RenderPass(scene, camera);
+    composer.addPass(renderPass);
+
+    const PaperVignetteShader = {
+      uniforms: {
+        tDiffuse: { value: null },
+        uTime: { value: 0.0 }
+      },
+      vertexShader: `
+        varying vec2 vUv;
+        void main() {
+          vUv = uv;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `,
+      fragmentShader: `
+        uniform sampler2D tDiffuse;
+        uniform float uTime;
+        varying vec2 vUv;
+        float rand(vec2 co) {
+          return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+        }
+        void main() {
+          vec4 texel = texture2D(tDiffuse, vUv);
+          vec2 dist = vUv - 0.5;
+          float vig = smoothstep(0.85, 0.25, length(dist));
+          float grain = (rand(vUv + fract(uTime * 0.05)) - 0.5) * 0.022;
+          vec3 col = texel.rgb * mix(0.84, 1.03, vig) + grain;
+          gl_FragColor = vec4(col, texel.a);
+        }
+      `
+    };
+    const postPass = new ShaderPass(PaperVignetteShader);
+    composer.addPass(postPass);
+
+    // OrbitControls with sensible desk limits
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.065;
+    controls.maxPolarAngle = Math.PI * 0.455; // Never go below the desk
+    controls.minPolarAngle = 0.12;
+    controls.minDistance = 2.6;
+    controls.maxDistance = 12.5;
+    controls.panSpeed = 0.8;
+    controls.rotateSpeed = 0.75;
+    controls.target.set(0, 0.25, 0);
+
+    // Stop guided demo immediately if user manually grabs the camera
+    controls.addEventListener('start', () => {
+      if (state.isDemoPlaying) {
+        stopDemo(true);
+      }
+    });
+
+    function getDefaultCameraPose() {
+      const aspect = getSafeAspect();
+      // Frame the entire open spread (width ~5.6 units) even on portrait phone screens
+      const dist = aspect < 1.0 ? (7.4 / Math.max(aspect, 0.48)) : 6.1;
+      return {
+        pos: new THREE.Vector3(0, dist * 0.78, dist * 0.72),
+        target: new THREE.Vector3(0, 0.22, 0.05)
+      };
+    }
+
+    function resetCamera(instant = false) {
+      const pose = getDefaultCameraPose();
+      if (instant || state.reducedMotion) {
+        camera.position.copy(pose.pos);
+        controls.target.copy(pose.target);
+        controls.update();
+      } else {
+        gsap.to(camera.position, { x: pose.pos.x, y: pose.pos.y, z: pose.pos.z, duration: 0.9, ease: 'power2.inOut' });
+        gsap.to(controls.target, {
+          x: pose.target.x, y: pose.target.y, z: pose.target.z, duration: 0.9, ease: 'power2.inOut',
+          onUpdate: () => controls.update()
+        });
+      }
+    }
+    resetCamera(true);
+
+    // =========================================================================
+    // 5. LIGHTING & POP-UP BOOK ARCHITECTURE
+    // =========================================================================
+    const hemiLight = new THREE.HemisphereLight('#fffdf8', '#465261', 0.85);
+    scene.add(hemiLight);
+
+    const dirLight = new THREE.DirectionalLight('#fff7e8', 1.45);
+    dirLight.position.set(3.5, 6.5, 4.2);
+    dirLight.castShadow = true;
+    dirLight.shadow.mapSize.set(2048, 2048);
+    dirLight.shadow.camera.near = 1;
+    dirLight.shadow.camera.far = 18;
+    const d = 4.5;
+    dirLight.shadow.camera.left = -d;
+    dirLight.shadow.camera.right = d;
+    dirLight.shadow.camera.top = d;
+    dirLight.shadow.camera.bottom = -d;
+    dirLight.shadow.bias = -0.0005;
+    scene.add(dirLight);
+
+    const rimLight = new THREE.DirectionalLight('#9ad8d0', 0.45);
+    rimLight.position.set(-4, 3, -3);
+    scene.add(rimLight);
+
+    // Desk Surface
+    const deskGeo = new THREE.PlaneGeometry(28, 28);
+    const deskMat = new THREE.MeshStandardMaterial({ map: createWoodTexture(), roughness: 0.78, metalness: 0.05 });
+    const desk = new THREE.Mesh(deskGeo, deskMat);
+    desk.rotation.x = -Math.PI / 2;
+    desk.receiveShadow = true;
+    scene.add(desk);
+
+    // Book Base Group
+    const bookGroup = new THREE.Group();
+    scene.add(bookGroup);
+
+    const PAGE_W = 2.65;
+    const PAGE_D = 3.35;
+    const PAGE_H = 0.05;
+
+    // Hardcover Boards
+    const coverMat = new THREE.MeshStandardMaterial({ map: createClothTexture(), roughness: 0.85 });
+    const leftCover = new THREE.Mesh(new THREE.BoxGeometry(PAGE_W + 0.14, 0.06, PAGE_D + 0.16), coverMat);
+    leftCover.position.set(-PAGE_W / 2 - 0.04, 0.03, 0);
+    leftCover.receiveShadow = true;
+    leftCover.castShadow = true;
+    bookGroup.add(leftCover);
+
+    const rightCover = new THREE.Mesh(new THREE.BoxGeometry(PAGE_W + 0.14, 0.06, PAGE_D + 0.16), coverMat);
+    rightCover.position.set(PAGE_W / 2 + 0.04, 0.03, 0);
+    rightCover.receiveShadow = true;
+    rightCover.castShadow = true;
+    bookGroup.add(rightCover);
+
+    const spineMesh = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.065, PAGE_D + 0.16), coverMat);
+    spineMesh.position.set(0, 0.032, 0);
+    bookGroup.add(spineMesh);
+
+    // Paper Blocks (Left & Right Pages)
+    const paperMat = new THREE.MeshStandardMaterial({ map: createPaperTexture(), roughness: 0.88 });
+    const leftPageMesh = new THREE.Mesh(new THREE.BoxGeometry(PAGE_W, PAGE_H, PAGE_D), paperMat);
+    leftPageMesh.position.set(-PAGE_W / 2 - 0.01, 0.085, 0);
+    leftPageMesh.receiveShadow = true;
+    bookGroup.add(leftPageMesh);
+
+    const rightPageMesh = new THREE.Mesh(new THREE.BoxGeometry(PAGE_W, PAGE_H, PAGE_D), paperMat);
+    rightPageMesh.position.set(PAGE_W / 2 + 0.01, 0.085, 0);
+    rightPageMesh.receiveShadow = true;
+    bookGroup.add(rightPageMesh);
+
+    // Spine crease shadow strip
+    const creaseMesh = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.12, PAGE_D),
+      new THREE.MeshBasicMaterial({ color: '#c8beae', side: THREE.DoubleSide })
+    );
+    creaseMesh.rotation.x = -Math.PI / 2;
+    creaseMesh.position.set(0, 0.112, 0);
+    bookGroup.add(creaseMesh);
+
+    // Curling Sheet Mesh for 3D Page-Turn Transition
+    const turnGeo = new THREE.PlaneGeometry(PAGE_W, PAGE_D, 24, 12);
+    turnGeo.translate(PAGE_W / 2, 0, 0); // Pivot at spine x=0
+    turnGeo.rotateX(-Math.PI / 2);
+    const turnMat = new THREE.MeshStandardMaterial({
+      map: createPaperTexture(),
+      roughness: 0.82,
+      side: THREE.DoubleSide
+    });
+    const turningSheet = new THREE.Mesh(turnGeo, turnMat);
+    turningSheet.position.set(0, 0.118, 0);
+    turningSheet.visible = false;
+    turningSheet.castShadow = true;
+    bookGroup.add(turningSheet);
+
+    function deformTurningSheet(progress) {
+      // progress: 0 (right page) -> 1 (left page)
+      const pos = turnGeo.attributes.position;
+      const arch = Math.sin(progress * Math.PI);
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i); // 0 to PAGE_W
+        const normX = x / PAGE_W;
+        const curlY = Math.sin(normX * Math.PI) * arch * 0.42;
+        pos.setY(i, curlY);
+      }
+      pos.needsUpdate = true;
+      turnGeo.computeVertexNormals();
+      turningSheet.rotation.z = progress * Math.PI;
+    }
+
+    // =========================================================================
+    // 6. LEFT PAGE CSS3D OBJECT (Crisp HTML/CSS + Wheel Forwarding)
+    // =========================================================================
+    const leftPageEl = document.createElement('div');
+    leftPageEl.className = 'book-left-page';
+    leftPageEl.innerHTML = `<div id="left-page-inner"></div>`;
+
+    // Forward mouse wheel from HTML page to WebGL canvas so zoom works everywhere
+    leftPageEl.addEventListener('wheel', (e) => {
+      // Only forward if the user isn't scrolling inside overflowing text, or forward when ctrl/zooming
+      const atTop = leftPageEl.scrollTop <= 0 && e.deltaY < 0;
+      const atBottom = (leftPageEl.scrollTop + leftPageEl.clientHeight >= leftPageEl.scrollHeight - 2) && e.deltaY > 0;
+      if (atTop || atBottom || e.ctrlKey) {
+        const cloned = new WheelEvent('wheel', {
+          deltaX: e.deltaX, deltaY: e.deltaY, deltaZ: e.deltaZ,
+          deltaMode: e.deltaMode, clientX: e.clientX, clientY: e.clientY,
+          bubbles: true, cancelable: true
+        });
+        renderer.domElement.dispatchEvent(cloned);
+      }
+    }, { passive: true });
+
+    const cssPageObj = new CSS3DObject(leftPageEl);
+    // Scale 680x860 CSS px into PAGE_W x PAGE_D (2.65 x 3.35 world units)
+    const cssScale = PAGE_W / 680;
+    cssPageObj.scale.set(cssScale, cssScale, cssScale);
+    cssPageObj.rotation.x = -Math.PI / 2;
+    cssPageObj.position.set(-PAGE_W / 2 - 0.01, 0.114, 0);
+    bookGroup.add(cssPageObj);
+
+    // =========================================================================
+    // 7. RIGHT PAGE POP-UP STAGE & CANVAS CALLOUT LABELS
+    // =========================================================================
+    const popupRoot = new THREE.Group();
+    popupRoot.position.set(PAGE_W / 2 + 0.01, 0.112, 0);
+    bookGroup.add(popupRoot);
+
+    const labelsGroup = new THREE.Group();
+    popupRoot.add(labelsGroup);
+
+    function trackGeo(g) { state.disposables.geometries.push(g); return g; }
+    function trackMat(m) { state.disposables.materials.push(m); return m; }
+    function trackTex(t) { state.disposables.textures.push(t); return t; }
+
+    function clearPopupStage() {
+      state.interactiveMeshes = [];
+      while (popupRoot.children.length > 0) {
+        const child = popupRoot.children[0];
+        popupRoot.remove(child);
+      }
+      while (labelsGroup.children.length > 0) {
+        labelsGroup.remove(labelsGroup.children[0]);
+      }
+      state.disposables.geometries.forEach(g => g.dispose());
+      state.disposables.materials.forEach(m => m.dispose());
+      state.disposables.textures.forEach(t => t.dispose());
+      state.disposables = { geometries: [], materials: [], textures: [] };
+      popupRoot.add(labelsGroup);
+    }
+
+    function createLabelSprite(text, anchor = 'center') {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 96;
+      const ctx = canvas.getContext('2d');
+      ctx.font = '700 26px "Plus Jakarta Sans", sans-serif';
+      const metrics = ctx.measureText(text);
+      const boxW = Math.min(490, Math.max(180, metrics.width + 44));
+      const boxH = 58;
+      const x = (512 - boxW) / 2;
+      const y = (96 - boxH) / 2;
+
+      ctx.fillStyle = state.themeIndex === 1 ? 'rgba(24, 30, 40, 0.92)' : 'rgba(255, 252, 245, 0.94)';
+      ctx.beginPath();
+      ctx.roundRect(x, y, boxW, boxH, 16);
+      ctx.fill();
+
+      ctx.strokeStyle = state.themeIndex === 1 ? '#4ecdc4' : '#1d6b64';
+      ctx.lineWidth = 4;
+      ctx.stroke();
+
+      ctx.fillStyle = state.themeIndex === 1 ? '#eef2f7' : '#1e242b';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, 256, 49);
+
+      const tex = trackTex(new THREE.CanvasTexture(canvas));
+      const mat = trackMat(new THREE.SpriteMaterial({ map: tex, depthTest: false }));
+      const sprite = new THREE.Sprite(mat);
+      sprite.scale.set(1.05, 0.2, 1);
+      return sprite;
+    }
+
+    function buildPageLabels(lesson) {
+      if (!lesson.pageLabels) return;
+      lesson.pageLabels.forEach(lbl => {
+        const sp = createLabelSprite(lbl.text, lbl.anchor);
+        sp.position.set(lbl.position[0], lbl.position[1], lbl.position[2]);
+        labelsGroup.add(sp);
+      });
+    }
+
+    // Helper: Stylized Anatomical Infant Bust Builder (used across lessons)
+    function createInfantModel(options = {}) {
+      const group = new THREE.Group();
+      const skinMat = trackMat(new THREE.MeshStandardMaterial({ color: '#f4c7a8', roughness: 0.6 }));
+      const clothMat = trackMat(new THREE.MeshStandardMaterial({ color: '#64a6bd', roughness: 0.75 }));
+      const scmRetractedMat = trackMat(new THREE.MeshStandardMaterial({
+        color: '#d9483b', emissive: '#59120b', emissiveIntensity: 0.25, roughness: 0.45
+      }));
+      const scmHealthyMat = trackMat(new THREE.MeshStandardMaterial({
+        color: '#3ca374', emissive: '#0c3b25', emissiveIntensity: 0.15, roughness: 0.5
+      }));
+
+      // Torso
+      const torso = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(0.32, 0.36, 0.62, 24)), clothMat);
+      torso.position.y = 0.31;
+      torso.castShadow = true;
+      group.add(torso);
+
+      // Shoulders / Clavicles
+      const shoulders = new THREE.Mesh(trackGeo(new THREE.CapsuleGeometry(0.13, 0.56, 12, 20)), clothMat);
+      shoulders.rotation.z = Math.PI / 2;
+      shoulders.position.y = 0.58;
+      shoulders.castShadow = true;
+      group.add(shoulders);
+
+      // Neck base
+      const neck = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(0.12, 0.14, 0.18, 20)), skinMat);
+      neck.position.y = 0.68;
+      group.add(neck);
+
+      // Head Pivot Group
+      const headPivot = new THREE.Group();
+      headPivot.position.set(0, 0.74, 0);
+      group.add(headPivot);
+
+      const cranium = new THREE.Mesh(trackGeo(new THREE.SphereGeometry(0.25, 28, 24)), skinMat);
+      cranium.scale.set(0.95, 1.06, 1.02);
+      cranium.position.y = 0.22;
+      cranium.castShadow = true;
+      headPivot.add(cranium);
+
+      // Nose & Ears for clear orientation of rotation & tilt
+      const nose = new THREE.Mesh(trackGeo(new THREE.SphereGeometry(0.036, 12, 12)), skinMat);
+      nose.position.set(0, 0.2, 0.25);
+      headPivot.add(nose);
+
+      const earR = new THREE.Mesh(trackGeo(new THREE.SphereGeometry(0.042, 12, 12)), skinMat);
+      earR.position.set(-0.24, 0.21, 0);
+      headPivot.add(earR);
+
+      const earL = new THREE.Mesh(trackGeo(new THREE.SphereGeometry(0.042, 12, 12)), skinMat);
+      earL.position.set(0.24, 0.21, 0);
+      headPivot.add(earL);
+
+      // Eyes (simple dark dots)
+      const eyeMat = trackMat(new THREE.MeshBasicMaterial({ color: '#222' }));
+      const eyeR = new THREE.Mesh(trackGeo(new THREE.SphereGeometry(0.018, 10, 10)), eyeMat);
+      eyeR.position.set(-0.08, 0.24, 0.23);
+      headPivot.add(eyeR);
+      const eyeL = new THREE.Mesh(trackGeo(new THREE.SphereGeometry(0.018, 10, 10)), eyeMat);
+      eyeL.position.set(0.08, 0.24, 0.23);
+      headPivot.add(eyeL);
+
+      // SCM Right (anatomical right = -X from viewer's front perspective)
+      const scmRight = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(0.028, 0.036, 0.28, 14)), scmRetractedMat);
+      scmRight.position.set(-0.12, 0.69, 0.08);
+      scmRight.rotation.set(0.25, 0, -0.35);
+      scmRight.userData = { actionId: 'palpate_scm', label: 'SCM Droit Rétracté' };
+      group.add(scmRight);
+
+      // Fibrous "Olive" nodule on Right SCM
+      const olive = new THREE.Mesh(
+        trackGeo(new THREE.SphereGeometry(0.046, 16, 16)),
+        trackMat(new THREE.MeshStandardMaterial({ color: '#ff7b54', emissive: '#8a1c0c', emissiveIntensity: 0.4 }))
+      );
+      olive.scale.set(0.85, 1.35, 0.85);
+      olive.position.set(-0.12, 0.69, 0.09);
+      group.add(olive);
+
+      // SCM Left (healthy)
+      const scmLeft = new THREE.Mesh(trackGeo(new THREE.CylinderGeometry(0.024, 0.028, 0.29, 14)), scmHealthyMat);
+      scmLeft.position.set(0.12, 0.69, 0.08);
+      scmLeft.rotation.set(0.25, 0, 0.35);
+      group.add(scmLeft);
+
+      return { group, headPivot, cranium, scmRight, scmLeft, olive, torso };
+    }
+
+    // Current Lesson Scene Controller
+    let currentSceneController = null;
+
+    function buildLessonScene(index) {
+      clearPopupStage();
+      const lesson = LESSONS[index];
+      const spawnables = [];
+
+      function registerSpawn(obj) {
+        popupRoot.add(obj);
+        spawnables.push(obj);
+        return obj;
+      }
+
+      // Base circular stage mat on right page
+      const stageDisc = new THREE.Mesh(
+        trackGeo(new THREE.CylinderGeometry(1.12, 1.15, 0.02, 40)),
+        trackMat(new THREE.MeshStandardMaterial({ color: '#e6decb', roughness: 0.9 }))
+      );
+      stageDisc.position.y = 0.01;
+      stageDisc.receiveShadow = true;
+      popupRoot.add(stageDisc);
+
+      // -----------------------------------------------------------------------
+      // LESSON 1: Introduction & Biomécanique du TMC
+      // -----------------------------------------------------------------------
+      if (index === 0) {
+        const baby = createInfantModel();
+        baby.group.position.set(0, 0.02, 0.05);
+        registerSpawn(baby.group);
+        state.interactiveMeshes.push(baby.scmRight, baby.cranium);
+        baby.cranium.userData = { actionId: 'toggle_tmc_posture' };
+
+        // Podium of top 3 pediatric orthopedic pathologies
+        const ranks = [
+          { h: 0.46, x: -0.78, color: '#94a3b8', label: '1. LCH' },
+          { h: 0.34, x: -0.52, color: '#64748b', label: '2. PBVE' },
+          { h: 0.24, x: -0.26, color: '#1d6b64', label: '3. TMC' }
+        ];
+        ranks.forEach(r => {
+          const bar = new THREE.Mesh(
+            trackGeo(new THREE.BoxGeometry(0.2, r.h, 0.2)),
+            trackMat(new THREE.MeshStandardMaterial({ color: r.color, roughness: 0.5 }))
+          );
+          bar.position.set(r.x, r.h / 2 + 0.02, -0.65);
+          bar.castShadow = true;
+          registerSpawn(bar);
+        });
+
+        let isTmc = true;
+        function applyPosture(tmc) {
+          isTmc = tmc;
+          // Right TMC: homolateral right tilt (z = +0.34 rad) + contralateral left chin rotation (y = +0.48 rad) + slight flexion (x = 0.14)
+          const targetRot = tmc ? { x: 0.14, y: 0.48, z: 0.34 } : { x: 0, y: 0, z: 0 };
+          gsap.to(baby.headPivot.rotation, { ...targetRot, duration: 0.65, ease: 'power2.out' });
+          gsap.to(baby.scmRight.scale, { x: tmc ? 1.35 : 1.0, y: tmc ? 0.85 : 1.0, z: tmc ? 1.35 : 1.0, duration: 0.5 });
+          gsap.to(baby.olive.scale, { x: tmc ? 1.2 : 0.7, y: tmc ? 1.5 : 0.9, z: tmc ? 1.2 : 0.7, duration: 0.5 });
+        }
+        applyPosture(true);
+
+        currentSceneController = {
+          trigger(actionId) {
+            if (actionId === 'toggle_tmc_posture') {
+              applyPosture(!isTmc);
+              showToast(isTmc ? 'Attitude TMC : inclinaison droite + rotation gauche' : 'Axe cervical neutre restauré');
+            } else if (actionId === 'set_neutral') {
+              applyPosture(false);
+            } else if (actionId === 'set_tmc') {
+              applyPosture(true);
+            } else if (actionId === 'palpate_scm') {
+              applyPosture(true);
+              gsap.fromTo(baby.olive.scale, { x: 1.8, y: 2.0, z: 1.8 }, { x: 1.2, y: 1.5, z: 1.2, duration: 0.7, ease: 'elastic.out(1, 0.4)' });
+              showToast('Palpation : contracture & olive du SCM droit');
+            }
+          }
+        };
+      }
+
+      // -----------------------------------------------------------------------
+      // LESSON 2: Les 5 Objectifs de la Rééducation
+      // -----------------------------------------------------------------------
+      else if (index === 1) {
+        const baby = createInfantModel();
+        baby.group.position.set(0, 0.02, -0.05);
+        baby.headPivot.rotation.set(0, 0, 0);
+        registerSpawn(baby.group);
+
+        // Plumb-line alignment laser
+        const plumb = new THREE.Mesh(
+          trackGeo(new THREE.CylinderGeometry(0.008, 0.008, 1.35, 8)),
+          trackMat(new THREE.MeshBasicMaterial({ color: '#10b981' }))
+        );
+        plumb.position.set(0, 0.68, 0.28);
+        registerSpawn(plumb);
+
+        // 5 Objective Pillars arranged in a semicircle
+        const pillars = [];
+        const colors = ['#1d6b64', '#2a9d8f', '#e9c46a', '#f4a261', '#e76f51'];
+        for (let i = 0; i < 5; i++) {
+          const angle = ((i - 2) * 0.42);
+          const px = Math.sin(angle) * 0.85;
+          const pz = Math.cos(angle) * 0.68 + 0.1;
+          const pillar = new THREE.Mesh(
+            trackGeo(new THREE.CylinderGeometry(0.085, 0.1, 0.38 + i * 0.04, 18)),
+            trackMat(new THREE.MeshStandardMaterial({ color: colors[i], roughness: 0.45 }))
+          );
+          pillar.position.set(px, (0.38 + i * 0.04) / 2 + 0.02, pz);
+          pillar.castShadow = true;
+          pillar.userData = { actionId: 'cycle_objectives', objIdx: i };
+          registerSpawn(pillar);
+          state.interactiveMeshes.push(pillar);
+          pillars.push(pillar);
+        }
+
+        let activeObj = 0;
+        let isPlagio = false;
+        const objNames = [
+          '1. Récupérer la mobilité cervicale',
+          '2. Prévenir la fibrose et l’olive du SCM',
+          '3. Corriger les attitudes vicieuses (alignement)',
+          '4. Prévenir la plagiocéphalie et asymétries faciales',
+          '5. Éviter un schéma moteur pathologique'
+        ];
+
+        function highlightPillar(idx) {
+          pillars.forEach((p, i) => {
+            gsap.to(p.scale, { y: i === idx ? 1.32 : 1.0, duration: 0.4, ease: 'back.out(1.7)' });
+          });
+        }
+        highlightPillar(0);
+
+        currentSceneController = {
+          trigger(actionId) {
+            if (actionId === 'cycle_objectives') {
+              activeObj = (activeObj + 1) % 5;
+              highlightPillar(activeObj);
+              showToast(objNames[activeObj]);
+            } else if (actionId === 'toggle_cranial_symmetry') {
+              isPlagio = !isPlagio;
+              gsap.to(baby.cranium.scale, {
+                x: isPlagio ? 1.12 : 0.95,
+                z: isPlagio ? 0.86 : 1.02,
+                duration: 0.5
+              });
+              gsap.to(baby.headPivot.rotation, { z: isPlagio ? 0.28 : 0, duration: 0.5 });
+              showToast(isPlagio ? 'Sans traitement : asymétrie crânienne (plagiocéphalie)' : 'Voûte crânienne symétrique préservée');
+            } else if (actionId === 'highlight_all') {
+              pillars.forEach(p => gsap.to(p.scale, { y: 1.2, duration: 0.4 }));
+            } else if (actionId === 'show_plagio') {
+              isPlagio = true;
+              gsap.to(baby.cranium.scale, { x: 1.12, z: 0.86, duration: 0.5 });
+              gsap.to(baby.headPivot.rotation, { z: 0.28, duration: 0.5 });
+            } else if (actionId === 'show_symmetric') {
+              isPlagio = false;
+              gsap.to(baby.cranium.scale, { x: 0.95, z: 1.02, duration: 0.5 });
+              gsap.to(baby.headPivot.rotation, { z: 0, duration: 0.5 });
+            }
+          }
+        };
+      }
+
+      // -----------------------------------------------------------------------
+      // LESSON 3: Torticolis Positionnel & Nursing Postural
+      // -----------------------------------------------------------------------
+      else if (index === 2) {
+        // Play mat
+        const matMesh = new THREE.Mesh(
+          trackGeo(new THREE.BoxGeometry(1.5, 0.04, 1.9)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#dbeafe', roughness: 0.9 }))
+        );
+        matMesh.position.y = 0.03;
+        matMesh.receiveShadow = true;
+        registerSpawn(matMesh);
+
+        // Supine infant lying along Z
+        const baby = createInfantModel();
+        baby.group.rotation.x = -Math.PI / 2;
+        baby.group.position.set(0, 0.24, 0.45);
+        baby.headPivot.rotation.set(0, 0.42, 0.22); // Initially turned left (away from right retracted side)
+        registerSpawn(baby.group);
+
+        // Felt cervical collar (torus around neck)
+        const collar = new THREE.Mesh(
+          trackGeo(new THREE.TorusGeometry(0.145, 0.042, 14, 28)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#f59e0b', roughness: 0.95 }))
+        );
+        collar.position.set(0, 0.22, -0.22);
+        collar.visible = false;
+        registerSpawn(collar);
+
+        // Sandbags flanking trunk
+        const sandbagMat = trackMat(new THREE.MeshStandardMaterial({ color: '#d4a373', roughness: 0.9 }));
+        const bagL = new THREE.Mesh(trackGeo(new THREE.CapsuleGeometry(0.08, 0.45, 8, 16)), sandbagMat);
+        bagL.rotation.x = Math.PI / 2;
+        bagL.position.set(0.42, 0.12, 0.12);
+        registerSpawn(bagL);
+
+        const bagR = new THREE.Mesh(trackGeo(new THREE.CapsuleGeometry(0.08, 0.45, 8, 16)), sandbagMat);
+        bagR.rotation.x = Math.PI / 2;
+        bagR.position.set(-0.42, 0.12, 0.12);
+        registerSpawn(bagR);
+
+        // Feeding bottle on the affected (right = -X) side
+        const bottleGroup = new THREE.Group();
+        const bottleBody = new THREE.Mesh(
+          trackGeo(new THREE.CylinderGeometry(0.065, 0.065, 0.24, 18)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#ffffff', roughness: 0.25 }))
+        );
+        const nipple = new THREE.Mesh(
+          trackGeo(new THREE.ConeGeometry(0.035, 0.08, 16)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#fbbf24' }))
+        );
+        nipple.position.y = 0.16;
+        bottleGroup.add(bottleBody, nipple);
+        bottleGroup.position.set(-0.68, 0.28, -0.35);
+        bottleGroup.rotation.z = -0.85;
+        bottleGroup.userData = { actionId: 'feed_bottle' };
+        registerSpawn(bottleGroup);
+        state.interactiveMeshes.push(bottleBody);
+
+        // Gentle Rattle + Acoustic Wave Ring
+        const rattle = new THREE.Mesh(
+          trackGeo(new THREE.SphereGeometry(0.08, 18, 18)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#ec4899', roughness: 0.4 }))
+        );
+        rattle.position.set(-0.72, 0.42, -0.75);
+        rattle.userData = { actionId: 'sound_stimulus' };
+        registerSpawn(rattle);
+        state.interactiveMeshes.push(rattle);
+
+        const waveRing = new THREE.Mesh(
+          trackGeo(new THREE.RingGeometry(0.1, 0.13, 32)),
+          trackMat(new THREE.MeshBasicMaterial({ color: '#ec4899', side: THREE.DoubleSide, transparent: true, opacity: 0 }))
+        );
+        waveRing.position.copy(rattle.position);
+        waveRing.rotation.x = -Math.PI / 2;
+        registerSpawn(waveRing);
+
+        currentSceneController = {
+          trigger(actionId) {
+            if (actionId === 'feed_bottle') {
+              gsap.to(bottleGroup.position, { x: -0.38, y: 0.34, duration: 0.45, yoyo: true, repeat: 1 });
+              gsap.to(baby.headPivot.rotation, { y: -0.45, z: 0.05, duration: 0.7, ease: 'power2.out' });
+              showToast('Biberon présenté à droite ➔ rotation active vers le côté atteint !');
+            } else if (actionId === 'sound_stimulus') {
+              gsap.fromTo(rattle.rotation, { z: -0.4 }, { z: 0.4, duration: 0.12, yoyo: true, repeat: 5 });
+              gsap.fromTo(waveRing.scale, { x: 1, y: 1 }, { x: 4.5, y: 4.5, duration: 0.8 });
+              gsap.fromTo(waveRing.material, { opacity: 0.85 }, { opacity: 0, duration: 0.8 });
+              gsap.to(baby.headPivot.rotation, { y: -0.38, duration: 0.65 });
+              showToast('Son doux (volume conversation) à distance de l’oreille');
+            } else if (actionId === 'toggle_collar') {
+              collar.visible = !collar.visible;
+              if (collar.visible) gsap.to(baby.headPivot.rotation, { z: 0.04, duration: 0.4 });
+              showToast(collar.visible ? 'Collier cervical en feutre posé' : 'Collier cervical retiré');
+            } else if (actionId === 'setup_nursing') {
+              collar.visible = false;
+              gsap.to(baby.headPivot.rotation, { y: 0.42, z: 0.22, duration: 0.4 });
+            } else if (actionId === 'sound_and_collar') {
+              collar.visible = true;
+              gsap.fromTo(waveRing.scale, { x: 1, y: 1 }, { x: 4.5, y: 4.5, duration: 0.8 });
+              gsap.fromTo(waveRing.material, { opacity: 0.85 }, { opacity: 0, duration: 0.8 });
+              gsap.to(baby.headPivot.rotation, { y: -0.4, z: 0.04, duration: 0.6 });
+            }
+          }
+        };
+      }
+
+      // -----------------------------------------------------------------------
+      // LESSON 4: TMC Stades I & II — Mobilisations Passives
+      // -----------------------------------------------------------------------
+      else if (index === 3) {
+        // Physio Treatment Table
+        const tableTop = new THREE.Mesh(
+          trackGeo(new THREE.BoxGeometry(1.15, 0.08, 1.45)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#3b82f6', roughness: 0.65 }))
+        );
+        tableTop.position.set(0, 0.46, -0.25);
+        tableTop.castShadow = true;
+        tableTop.receiveShadow = true;
+        registerSpawn(tableTop);
+
+        // Infant supine with head extending slightly past front edge of table (z > 0.47)
+        const baby = createInfantModel();
+        baby.group.rotation.x = -Math.PI / 2;
+        baby.group.position.set(0, 0.66, 0.85);
+        baby.headPivot.rotation.set(0, 0.35, 0.25);
+        registerSpawn(baby.group);
+
+        // Therapist Hands (Left hand supporting occiput, Right hand cupping chin)
+        const handMat = trackMat(new THREE.MeshStandardMaterial({ color: '#e2a887', roughness: 0.55 }));
+        const leftHand = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.18, 0.06, 0.22)), handMat);
+        leftHand.position.set(-0.14, 0.48, 0.58);
+        registerSpawn(leftHand);
+
+        const rightHand = new THREE.Mesh(trackGeo(new THREE.BoxGeometry(0.16, 0.06, 0.24)), handMat);
+        rightHand.position.set(0.12, 0.78, 0.52);
+        registerSpawn(rightHand);
+
+        // Comfort / Tension Ring Indicator
+        const comfortMat = trackMat(new THREE.MeshBasicMaterial({ color: '#10b981', side: THREE.DoubleSide }));
+        const comfortRing = new THREE.Mesh(trackGeo(new THREE.RingGeometry(0.32, 0.37, 32)), comfortMat);
+        comfortRing.rotation.x = -Math.PI / 2;
+        comfortRing.position.set(0, 0.51, 0.55);
+        registerSpawn(comfortRing);
+
+        currentSceneController = {
+          trigger(actionId) {
+            if (actionId === 'passive_stretch_seq' || actionId === 'passive_stretch') {
+              comfortMat.color.set('#10b981');
+              // Gentle extension + rotation towards right (-0.5) + contralateral tilt (-0.25)
+              gsap.to(baby.headPivot.rotation, { x: -0.14, y: -0.52, z: -0.26, duration: 1.1, ease: 'power1.inOut' });
+              gsap.to(rightHand.position, { x: -0.06, duration: 1.1, ease: 'power1.inOut' });
+              showToast('Mobilisation passive lente & indolore : extension + rotation + inclinaison');
+            } else if (actionId === 'simulate_resistance' || actionId === 'resistance_pause') {
+              comfortMat.color.set('#f59e0b');
+              // Return to neutral, pause gently, never force
+              gsap.to(baby.headPivot.rotation, { x: 0, y: 0.1, z: 0.08, duration: 0.45 });
+              showToast('⚠️ Résistance détectée : NE JAMAIS FORCER — apaisement avant reprise lente');
+            } else if (actionId === 'position_table') {
+              comfortMat.color.set('#10b981');
+              gsap.to(baby.headPivot.rotation, { x: -0.08, y: 0.35, z: 0.25, duration: 0.5 });
+            }
+          }
+        };
+      }
+
+      // -----------------------------------------------------------------------
+      // LESSON 5: Renforcement Musculaire selon les 3 Plans
+      // -----------------------------------------------------------------------
+      else if (index === 4) {
+        const baby = createInfantModel();
+        baby.group.position.set(0, 0.55, 0);
+        registerSpawn(baby.group);
+
+        // Highlight indicator bar
+        const muscleBeam = new THREE.Mesh(
+          trackGeo(new THREE.TorusGeometry(0.55, 0.015, 10, 40)),
+          trackMat(new THREE.MeshBasicMaterial({ color: '#10b981' }))
+        );
+        muscleBeam.position.set(0, 0.55, 0);
+        registerSpawn(muscleBeam);
+
+        function setPlane(plane) {
+          if (plane === 'plane_dorsal') {
+            // Supine suspension: baby lifts head forward (flexors)
+            gsap.to(baby.group.rotation, { x: -Math.PI / 2, y: 0, z: 0, duration: 0.65 });
+            gsap.to(baby.group.position, { x: 0, y: 0.45, z: 0.35, duration: 0.65 });
+            gsap.to(baby.headPivot.rotation, { x: 0.48, y: 0, z: 0, duration: 0.75, delay: 0.2 });
+            muscleBeam.rotation.set(0, Math.PI / 2, 0);
+            showToast('1. Décubitus dorsal : redressement antérieur (fléchisseurs du cou)');
+          } else if (plane === 'plane_lateral') {
+            // Side-lying on opposite (left) side: lateral righting of head
+            gsap.to(baby.group.rotation, { x: 0, y: 0, z: -Math.PI / 2, duration: 0.65 });
+            gsap.to(baby.group.position, { x: -0.35, y: 0.48, z: 0, duration: 0.65 });
+            gsap.to(baby.headPivot.rotation, { x: 0, y: 0, z: 0.46, duration: 0.75, delay: 0.2 });
+            muscleBeam.rotation.set(0, 0, 0);
+            showToast('2. Latérocubitus opposé : alignement tête-tronc (inclinateurs sains)');
+          } else if (plane === 'plane_prone') {
+            // Prone suspension: baby extends head upward (posterior extensors)
+            gsap.to(baby.group.rotation, { x: Math.PI / 2, y: 0, z: 0, duration: 0.65 });
+            gsap.to(baby.group.position, { x: 0, y: 0.58, z: -0.35, duration: 0.65 });
+            gsap.to(baby.headPivot.rotation, { x: -0.52, y: 0, z: 0, duration: 0.75, delay: 0.2 });
+            muscleBeam.rotation.set(0, Math.PI / 2, 0);
+            showToast('3. Procubitus : soulèvement actif de la tête (extenseurs postérieurs)');
+          }
+        }
+        setPlane('plane_dorsal');
+
+        currentSceneController = {
+          trigger(actionId) {
+            setPlane(actionId);
+          }
+        };
+      }
+
+      // -----------------------------------------------------------------------
+      // LESSON 6: Stade III (> 2 ans) & Rééducation Post-Opératoire
+      // -----------------------------------------------------------------------
+      else if (index === 5) {
+        // Klein Physio Ball
+        const kleinBall = new THREE.Mesh(
+          trackGeo(new THREE.SphereGeometry(0.46, 32, 24)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#0284c7', roughness: 0.45 }))
+        );
+        kleinBall.position.set(0, 0.46, 0.05);
+        kleinBall.castShadow = true;
+        kleinBall.userData = { actionId: 'klein_ball_tilt' };
+        registerSpawn(kleinBall);
+        state.interactiveMeshes.push(kleinBall);
+
+        // Postural Mirror Frame at back
+        const mirrorGroup = new THREE.Group();
+        const mirrorFrame = new THREE.Mesh(
+          trackGeo(new THREE.BoxGeometry(0.95, 1.35, 0.06)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#334155', roughness: 0.5 }))
+        );
+        const mirrorGlass = new THREE.Mesh(
+          trackGeo(new THREE.PlaneGeometry(0.84, 1.24)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#bae6fd', metalness: 0.75, roughness: 0.15 }))
+        );
+        mirrorGlass.position.z = 0.032;
+        mirrorGroup.add(mirrorFrame, mirrorGlass);
+        mirrorGroup.position.set(0, 0.68, -0.78);
+        registerSpawn(mirrorGroup);
+
+        // Child model
+        const child = createInfantModel();
+        registerSpawn(child.group);
+
+        // Milwaukee / Cervical Brace Rings
+        const braceGroup = new THREE.Group();
+        const neckRing = new THREE.Mesh(
+          trackGeo(new THREE.TorusGeometry(0.15, 0.025, 12, 28)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#e2e8f0', metalness: 0.6, roughness: 0.3 }))
+        );
+        neckRing.rotation.x = Math.PI / 2;
+        neckRing.position.y = 0.73;
+        const pelvicGirdle = new THREE.Mesh(
+          trackGeo(new THREE.CylinderGeometry(0.35, 0.38, 0.18, 24, 1, true)),
+          trackMat(new THREE.MeshStandardMaterial({ color: '#f8fafc', side: THREE.DoubleSide }))
+        );
+        pelvicGirdle.position.y = 0.18;
+        braceGroup.add(neckRing, pelvicGirdle);
+        braceGroup.visible = false;
+        child.group.add(braceGroup);
+
+        function setStage3Mode(mode) {
+          if (mode === 'klein_ball_tilt') {
+            kleinBall.visible = true;
+            braceGroup.visible = false;
+            gsap.to(child.group.rotation, { x: Math.PI / 2.2, y: 0, z: 0, duration: 0.55 });
+            gsap.to(child.group.position, { x: 0, y: 0.96, z: -0.25, duration: 0.55 });
+            gsap.to(kleinBall.position, { z: 0.18, duration: 0.45, yoyo: true, repeat: 1 });
+            gsap.to(child.headPivot.rotation, { x: -0.55, y: 0, z: 0, duration: 0.6 });
+            showToast('Stade III : déséquilibres sur ballon de Klein ➔ réaction réflexe de redressement');
+          } else if (mode === 'mirror_minerve') {
+            kleinBall.visible = false;
+            braceGroup.visible = false;
+            gsap.to(child.group.rotation, { x: 0, y: Math.PI, z: 0, duration: 0.55 });
+            gsap.to(child.group.position, { x: 0, y: 0.04, z: -0.25, duration: 0.55 });
+            gsap.to(child.headPivot.rotation, { x: -0.08, y: -0.45, z: 0, duration: 0.65 });
+            showToast('Post-op (Minerve retirée) : étirement & autograndissement face au miroir');
+          } else if (mode === 'milwaukee_protocol') {
+            kleinBall.visible = false;
+            braceGroup.visible = true;
+            gsap.to(child.group.rotation, { x: 0, y: 0, z: 0, duration: 0.55 });
+            gsap.to(child.group.position, { x: 0, y: 0.04, z: 0.05, duration: 0.55 });
+            gsap.to(child.headPivot.rotation, { x: -0.05, y: 0.45, z: 0, duration: 0.6, yoyo: true, repeat: 1 });
+            showToast('Corset de Milwaukee : allongement axial actif + rotations (épaules stabilisées)');
+          }
+        }
+        setStage3Mode('klein_ball_tilt');
+
+        currentSceneController = {
+          trigger(actionId) {
+            setStage3Mode(actionId);
+          }
+        };
+      }
+
+      buildPageLabels(lesson);
+
+      // Pop-up spring animation (scale.y from 0.01 to 1.0, staggered)
+      spawnables.forEach((obj, i) => {
+        if (state.reducedMotion) {
+          obj.scale.y = 1;
+        } else {
+          obj.scale.y = 0.01;
+          gsap.to(obj.scale, {
+            y: 1.0,
+            duration: 0.72,
+            delay: 0.08 + i * 0.07,
+            ease: 'elastic.out(1, 0.55)'
+          });
+        }
+      });
+    }
+
+    // =========================================================================
+    // 8. LEFT PAGE HTML RENDERER (Content, Flap, Experiments, Vocab, Quiz)
+    // =========================================================================
+    function renderLeftPage(index) {
+      const lesson = LESSONS[index];
+      const inner = document.getElementById('left-page-inner');
+
+      const expButtonsHtml = lesson.sceneDescription.interactions.map(inter =>
+        `<button class="exp-btn" data-action="${inter.id}">⚡ ${inter.label}</button>`
+      ).join('');
+
+      const vocabHtml = lesson.vocabulary.map(v =>
+        `<div class="vocab-item"><strong>${v.term}</strong><span>${v.definition}</span></div>`
+      ).join('');
+
+      const tasksHtml = lesson.tasks.map(t => `<li>${t}</li>`).join('');
+
+      const quizOptsHtml = lesson.quiz.options.map((opt, idx) =>
+        `<button class="quiz-opt" data-idx="${idx}">${String.fromCharCode(65 + idx)}. ${opt}</button>`
+      ).join('');
+
+      inner.innerHTML = `
+        <div class="page-header">
+          <span class="lesson-badge">LEÇON ${lesson.number} / ${LESSONS.length}</span>
+          <span class="course-tag">${SCHEMA.meta.course}</span>
+        </div>
+        <h1 class="page-title">${lesson.title}</h1>
+        <p class="page-subtitle">${lesson.subtitle}</p>
+
+        <div class="summary-box">${lesson.summary}</div>
+        <div class="formula-pill">📐 ${lesson.formula}</div>
+
+        <div class="flap-wrapper">
+          <button class="flap-toggle-btn" id="page-flap-btn" aria-expanded="false">
+            <span>${lesson.flap.buttonLabel}</span>
+            <span id="flap-arrow">▼</span>
+          </button>
+          <div class="flap-card" id="page-flap-card">
+            <h4>${lesson.flap.title}</h4>
+            <pre>${lesson.flap.content}</pre>
+          </div>
+        </div>
+
+        <div class="section-label">Manipulations 3D sur la page droite</div>
+        <div class="exp-controls">${expButtonsHtml}</div>
+
+        <div class="section-label">Vocabulaire clinique clé</div>
+        <div class="vocab-grid">${vocabHtml}</div>
+
+        <div class="section-label">Objectifs pratiques à tester</div>
+        <ul class="task-list">${tasksHtml}</ul>
+
+        <div class="quiz-box">
+          <p class="quiz-q">❓ Auto-évaluation : ${lesson.quiz.question}</p>
+          ${quizOptsHtml}
+          <div class="quiz-feedback" id="quiz-feedback"></div>
+        </div>
+      `;
+
+      leftPageEl.scrollTop = 0;
+
+      // Flap toggle listener
+      const flapBtn = document.getElementById('page-flap-btn');
+      const flapCard = document.getElementById('page-flap-card');
+      const flapArrow = document.getElementById('flap-arrow');
+      flapBtn.addEventListener('click', () => {
+        const isOpen = flapCard.classList.toggle('open');
+        flapBtn.setAttribute('aria-expanded', String(isOpen));
+        flapArrow.textContent = isOpen ? '▲' : '▼';
+        synth.playPop(isOpen);
+      });
+
+      // Experiment buttons
+      inner.querySelectorAll('.exp-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          inner.querySelectorAll('.exp-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          synth.playClick(580);
+          if (currentSceneController) {
+            currentSceneController.trigger(btn.dataset.action);
+          }
+        });
+      });
+
+      // Quiz buttons
+      inner.querySelectorAll('.quiz-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const chosen = Number(btn.dataset.idx);
+          const correct = lesson.quiz.correctIndex;
+          inner.querySelectorAll('.quiz-opt').forEach((b, i) => {
+            b.classList.remove('correct', 'wrong');
+            if (i === correct) b.classList.add('correct');
+            else if (i === chosen) b.classList.add('wrong');
+          });
+          const fb = document.getElementById('quiz-feedback');
+          if (chosen === correct) {
+            synth.playChime(true);
+            fb.textContent = '✅ Exact ! ' + lesson.quiz.explanation;
+          } else {
+            synth.playChime(false);
+            fb.textContent = '💡 Pas tout à fait. ' + lesson.quiz.explanation;
+          }
+        });
+      });
+    }
+
+    // =========================================================================
+    // 9. PAGE TURN TRANSITION (3D Curling Sheet + Fold Down / Pop Up)
+    // =========================================================================
+    function goToLesson(targetIndex) {
+      if (targetIndex < 0 || targetIndex >= LESSONS.length) return;
+      if (targetIndex === state.currentIndex || state.isFlipping) return;
+
+      stopDemo(false);
+      closeToc();
+
+      const forward = targetIndex > state.currentIndex;
+      state.currentIndex = targetIndex;
+      updateHud();
+
+      if (state.reducedMotion) {
+        renderLeftPage(targetIndex);
+        buildLessonScene(targetIndex);
+        return;
+      }
+
+      state.isFlipping = true;
+      controls.enabled = false;
+      synth.playRustle();
+
+      // Fold current 3D models down into the page
+      gsap.to(popupRoot.scale, { y: 0.01, duration: 0.28, ease: 'power2.in' });
+
+      turningSheet.visible = true;
+      const flipObj = { t: forward ? 0 : 1 };
+      deformTurningSheet(flipObj.t);
+
+      gsap.to(flipObj, {
+        t: forward ? 1 : 0,
+        duration: 0.78,
+        ease: 'power2.inOut',
+        onUpdate: () => deformTurningSheet(flipObj.t),
+        onComplete: () => {
+          turningSheet.visible = false;
+          popupRoot.scale.y = 1;
+          renderLeftPage(targetIndex);
+          buildLessonScene(targetIndex);
+          synth.playPop(true);
+          state.isFlipping = false;
+          controls.enabled = true;
+        }
+      });
+    }
+
+    // =========================================================================
+    // 10. GUIDED DEMO ENGINE (Camera Paths + Captions + Actions)
+    // =========================================================================
+    const captionBar = document.getElementById('caption-bar');
+    const toastEl = document.getElementById('toast');
+    let toastTimer = null;
+
+    function showCaption(text) {
+      captionBar.textContent = text;
+      captionBar.classList.add('visible');
+    }
+    function hideCaption() {
+      captionBar.classList.remove('visible');
+    }
+    function showToast(text) {
+      toastEl.textContent = text;
+      toastEl.classList.add('visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('visible'), 2600);
+    }
+
+    function startDemo() {
+      if (state.isFlipping) return;
+      if (state.isDemoPlaying) {
+        stopDemo(false);
+        return;
+      }
+      state.isDemoPlaying = true;
+      controls.enabled = false;
+      document.getElementById('btn-demo').classList.add('active');
+      document.getElementById('btn-demo').textContent = '⏸ Stop';
+      synth.playClick(640);
+
+      const steps = LESSONS[state.currentIndex].demoSteps;
+      let stepIdx = 0;
+
+      function runStep() {
+        if (!state.isDemoPlaying) return;
+        if (stepIdx >= steps.length) {
+          stopDemo(false);
+          showToast('Démo guidée terminée');
+          return;
+        }
+        const step = steps[stepIdx];
+        showCaption(step.caption);
+        if (currentSceneController && step.action) {
+          currentSceneController.trigger(step.action);
+        }
+
+        const tx = step.cameraTarget[0];
+        const ty = step.cameraTarget[1];
+        const tz = step.cameraTarget[2];
+        const cx = tx + step.cameraOffset[0];
+        const cy = ty + step.cameraOffset[1];
+        const cz = tz + step.cameraOffset[2];
+
+        if (state.reducedMotion) {
+          controls.target.set(tx, ty, tz);
+          camera.position.set(cx, cy, cz);
+          controls.update();
+        } else {
+          gsap.to(controls.target, {
+            x: tx, y: ty, z: tz, duration: 1.0, ease: 'power2.inOut',
+            onUpdate: () => controls.update()
+          });
+          gsap.to(camera.position, { x: cx, y: cy, z: cz, duration: 1.0, ease: 'power2.inOut' });
+        }
+
+        stepIdx++;
+        const timer = setTimeout(runStep, 3400);
+        state.demoTimers.push(timer);
+      }
+
+      runStep();
+    }
+
+    function stopDemo(userInterrupted = false) {
+      state.demoTimers.forEach(t => clearTimeout(t));
+      state.demoTimers = [];
+      if (!state.isDemoPlaying) return;
+      state.isDemoPlaying = false;
+      controls.enabled = true;
+      document.getElementById('btn-demo').classList.remove('active');
+      document.getElementById('btn-demo').textContent = '▶ Démo';
+      hideCaption();
+      if (userInterrupted) {
+        showToast('Contrôle manuel repris');
+      }
+    }
+
+    // =========================================================================
+    // 11. CLICK VS DRAG RAYCASTING ON 3D POP-UP MODELS
+    // =========================================================================
+    const raycaster = new THREE.Raycaster();
+    const pointerNdc = new THREE.Vector2();
+    let pointerDownInfo = null;
+    let activeTouchCount = 0;
+
+    renderer.domElement.addEventListener('pointerdown', (e) => {
+      if (e.pointerType === 'touch') activeTouchCount++;
+      if (activeTouchCount > 1) {
+        pointerDownInfo = null; // Cancel tap during multi-touch pinch/pan
+        return;
+      }
+      pointerDownInfo = { x: e.clientX, y: e.clientY, time: performance.now() };
+    });
+
+    renderer.domElement.addEventListener('pointerup', (e) => {
+      if (e.pointerType === 'touch') activeTouchCount = Math.max(0, activeTouchCount - 1);
+      if (!pointerDownInfo) return;
+      const dx = e.clientX - pointerDownInfo.x;
+      const dy = e.clientY - pointerDownInfo.y;
+      const dt = performance.now() - pointerDownInfo.time;
+      pointerDownInfo = null;
+
+      // Strict click vs drag threshold (< 6px movement and < 350ms)
+      if (Math.hypot(dx, dy) > 6 || dt > 350) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointerNdc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointerNdc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointerNdc, camera);
+      const hits = raycaster.intersectObjects(state.interactiveMeshes, true);
+      if (hits.length > 0) {
+        let obj = hits[0].object;
+        while (obj && !obj.userData?.actionId) obj = obj.parent;
+        if (obj && obj.userData?.actionId && currentSceneController) {
+          synth.playClick(620);
+          currentSceneController.trigger(obj.userData.actionId);
+        }
+      }
+    });
+
+    // =========================================================================
+    // 12. HUD, TOC DRAWER, THEMES & KEYBOARD SHORTCUTS
+    // =========================================================================
+    const tocDrawer = document.getElementById('toc-drawer');
+    const tocList = document.getElementById('toc-list');
+
+    function buildToc() {
+      tocList.innerHTML = LESSONS.map((l, idx) => `
+        <button class="toc-item ${idx === state.currentIndex ? 'current' : ''}" data-idx="${idx}">
+          <span class="toc-num">${l.number}</span>
+          <span>${l.title}</span>
+        </button>
+      `).join('');
+      tocList.querySelectorAll('.toc-item').forEach(btn => {
+        btn.addEventListener('click', () => goToLesson(Number(btn.dataset.idx)));
+      });
+    }
+
+    function toggleToc() {
+      const opening = !tocDrawer.classList.contains('open');
+      if (opening) {
+        buildToc();
+        tocDrawer.classList.add('open');
+      } else {
+        closeToc();
+      }
+    }
+    function closeToc() {
+      tocDrawer.classList.remove('open');
+    }
+
+    function updateHud() {
+      const l = LESSONS[state.currentIndex];
+      document.getElementById('hud-lesson-indicator').textContent = `${l.number}/${LESSONS.length} • ${l.title}`;
+      document.getElementById('btn-prev').disabled = state.currentIndex === 0;
+      document.getElementById('btn-next').disabled = state.currentIndex === LESSONS.length - 1;
+    }
+
+    document.getElementById('btn-toc').addEventListener('click', toggleToc);
+    document.getElementById('btn-prev').addEventListener('click', () => goToLesson(state.currentIndex - 1));
+    document.getElementById('btn-next').addEventListener('click', () => goToLesson(state.currentIndex + 1));
+    document.getElementById('btn-demo').addEventListener('click', startDemo);
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      stopDemo(false);
+      resetCamera(false);
+      synth.playClick(440);
+    });
+
+    document.getElementById('btn-sound').addEventListener('click', (e) => {
+      state.soundEnabled = !state.soundEnabled;
+      e.currentTarget.textContent = state.soundEnabled ? '🔊' : '🔇';
+      if (state.soundEnabled) synth.playClick(600);
+      showToast(state.soundEnabled ? 'Son activé' : 'Son coupé');
+    });
+
+    const themes = [
+      { cls: '', icon: '☀️', label: 'Thème Jour', bg: '#232b35' },
+      { cls: 'theme-night', icon: '🌙', label: 'Thème Nuit', bg: '#0f1319' },
+      { cls: 'theme-contrast', icon: '◐', label: 'Contraste Élevé', bg: '#111111' }
+    ];
+    document.getElementById('btn-theme').addEventListener('click', (e) => {
+      state.themeIndex = (state.themeIndex + 1) % themes.length;
+      const th = themes[state.themeIndex];
+      document.body.className = th.cls;
+      e.currentTarget.textContent = th.icon;
+      scene.background.set(th.bg);
+      scene.fog.color.set(th.bg);
+      // Rebuild labels to match theme contrast
+      buildPageLabels(LESSONS[state.currentIndex]);
+      showToast(th.label);
+    });
+
+    const motionBtn = document.getElementById('btn-motion');
+    function syncMotionBtn() {
+      motionBtn.classList.toggle('active', state.reducedMotion);
+      motionBtn.textContent = state.reducedMotion ? '⏸️' : '🎞️';
+    }
+    syncMotionBtn();
+    motionBtn.addEventListener('click', () => {
+      state.reducedMotion = !state.reducedMotion;
+      syncMotionBtn();
+      showToast(state.reducedMotion ? 'Animations réduites activées' : 'Animations complètes activées');
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target && ['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        goToLesson(state.currentIndex + 1);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goToLesson(state.currentIndex - 1);
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        startDemo();
+      } else if (e.key === 'r' || e.key === 'R') {
+        stopDemo(false);
+        resetCamera(false);
+      } else if (e.key === 'Escape') {
+        stopDemo(false);
+        closeToc();
+      }
+    });
+
+    // =========================================================================
+    // 13. RESIZE & MAIN RENDER LOOP (Wait for Web Fonts before Canvas Labels)
+    // =========================================================================
+    function onResize() {
+      const w = window.innerWidth || 1280;
+      const h = window.innerHeight || 800;
+      camera.aspect = getSafeAspect();
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+      composer.setSize(w, h);
+      cssRenderer.setSize(w, h);
+    }
+    window.addEventListener('resize', onResize);
+
+    const clock = new THREE.Clock();
+    function animate() {
+      requestAnimationFrame(animate);
+      const elapsed = clock.getElapsedTime();
+      postPass.uniforms.uTime.value = elapsed;
+      if (controls.enabled) controls.update();
+      composer.render();
+      cssRenderer.render(scene, camera);
+    }
+
+    // Boot after fonts are loaded so 2D canvas labels render in Plus Jakarta Sans
+    const boot = () => {
+      renderLeftPage(0);
+      buildLessonScene(0);
+      updateHud();
+      animate();
+    };
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(boot);
+    } else {
+      boot();
+    }
+  </script>
+</body>
+</html>
